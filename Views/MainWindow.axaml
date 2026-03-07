@@ -1,0 +1,254 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SyncForge.Configurator.Views.MainWindow"
+        Width="1200"
+        Height="760"
+        MinWidth="900"
+        MinHeight="620"
+        Title="SyncForge Configurator (R 0.2.0)">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" ColumnDefinitions="*">
+    <Border Grid.Row="0" Padding="16" Background="#102A43">
+      <DockPanel LastChildFill="True">
+        <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Left">
+          <Button Content="New" Click="OnNewClick" />
+          <Button Content="New Job Wizard" Click="OnNewJobWizardClick" />
+          <Button Content="Open" Click="OnOpenClick" />
+          <Button Content="Save" Click="OnSaveClick" />
+          <Button Content="Save As" Click="OnSaveAsClick" />
+          <Button Content="Validate" Click="OnValidateClick" />
+          <Button Content="Dry-Run" Click="OnDryRunClick" />
+          <Button Content="Run" Click="OnRunClick" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Row="1" Padding="12" Background="#F0F4F8">
+      <StackPanel Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Current File:" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding CurrentFileDisplayName}" />
+        </StackPanel>
+
+        <Border IsVisible="{Binding IsWizardVisible}"
+                Padding="10"
+                CornerRadius="6"
+                BorderThickness="1"
+                BorderBrush="#BCCCDC"
+                Background="#FFFFFF">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="New Job Wizard" FontWeight="SemiBold" FontSize="14" />
+              <TextBlock Text="{Binding WizardStepText}" Foreground="#486581" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock IsVisible="{Binding IsWizardStep1}" Text="Step 1: Select source connector" FontWeight="SemiBold" />
+            <ComboBox IsVisible="{Binding IsWizardStep1}"
+                      ItemsSource="{Binding SourceConnectors}"
+                      SelectedItem="{Binding WizardSourceConnector, Mode=TwoWay}" />
+
+            <TextBlock IsVisible="{Binding IsWizardStep2}" Text="Step 2: Select target connector" FontWeight="SemiBold" />
+            <ComboBox IsVisible="{Binding IsWizardStep2}"
+                      ItemsSource="{Binding TargetConnectors}"
+                      SelectedItem="{Binding WizardTargetConnector, Mode=TwoWay}" />
+
+            <TextBlock IsVisible="{Binding IsWizardStep3}" Text="Step 3: Select strategy" FontWeight="SemiBold" />
+            <Grid IsVisible="{Binding IsWizardStep3}" ColumnDefinitions="180,*" RowDefinitions="Auto,Auto">
+              <TextBlock Grid.Row="0" Grid.Column="0" Text="Mode" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="0" Grid.Column="1"
+                        ItemsSource="{Binding StrategyModeOptions}"
+                        SelectedItem="{Binding WizardStrategyMode, Mode=TwoWay}" />
+              <TextBlock Grid.Row="1" Grid.Column="0" Text="Upsert Key Fields" VerticalAlignment="Center" />
+              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding WizardUpsertKeys, Mode=TwoWay}" Watermark="id,email" />
+            </Grid>
+
+            <TextBlock IsVisible="{Binding IsWizardStep4}" Text="Step 4: Base parameters" FontWeight="SemiBold" />
+            <Grid IsVisible="{Binding IsWizardStep4}" ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Grid.Row="0" Grid.Column="0" Text="Job Name" VerticalAlignment="Center" />
+              <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding WizardJobName, Mode=TwoWay}" />
+              <TextBlock Grid.Row="1" Grid.Column="0" Text="Source Path/URL" VerticalAlignment="Center" />
+              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding WizardSourcePath, Mode=TwoWay}" />
+              <TextBlock Grid.Row="2" Grid.Column="0" Text="Target Path/URL" VerticalAlignment="Center" />
+              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding WizardTargetPath, Mode=TwoWay}" />
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Back" Click="OnWizardBackClick" IsEnabled="{Binding CanWizardGoBack}" />
+              <Button Content="Next" Click="OnWizardNextClick" IsEnabled="{Binding CanWizardGoNext}" />
+              <Button Content="Finish" Click="OnWizardFinishClick" IsEnabled="{Binding CanWizardFinish}" />
+              <Button Content="Cancel" Click="OnWizardCancelClick" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="2" Padding="12" Margin="12,8,12,0" Background="#F8FBFF" BorderBrush="#BCCCDC" BorderThickness="1" CornerRadius="8">
+      <Grid ColumnDefinitions="2*,2*,2*,Auto" RowDefinitions="Auto,Auto">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Plugin Directory" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="0" Grid.Column="1" Text="Source Connector" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="0" Grid.Column="2" Text="Target Connector" FontWeight="SemiBold" />
+
+        <TextBox Grid.Row="1" Grid.Column="0" Margin="0,8,8,0" Text="{Binding PluginDirectory, Mode=TwoWay}" />
+        <ComboBox Grid.Row="1" Grid.Column="1"
+                  Margin="0,8,8,0"
+                  ItemsSource="{Binding SourceConnectors}"
+                  SelectedItem="{Binding SelectedSourceConnector, Mode=TwoWay}" />
+        <ComboBox Grid.Row="1" Grid.Column="2"
+                  Margin="0,8,8,0"
+                  ItemsSource="{Binding TargetConnectors}"
+                  SelectedItem="{Binding SelectedTargetConnector, Mode=TwoWay}" />
+        <Button Grid.Row="1" Grid.Column="3" Margin="0,8,0,0" Content="Reload" Click="OnReloadConnectorsClick" MinWidth="88" />
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="3" ColumnDefinitions="3*,2*" Margin="12">
+      <Border Grid.Column="0" BorderBrush="#BCCCDC" BorderThickness="1" CornerRadius="8" Padding="8">
+        <StackPanel Spacing="6">
+          <TextBlock Text="JSON Editor" FontWeight="SemiBold" FontSize="14" />
+          <TextBox Text="{Binding JsonContent, Mode=TwoWay}"
+                   AcceptsReturn="True"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                   FontFamily="Consolas"
+                   FontSize="13"
+                   Height="250" />
+
+          <TextBlock Text="{Binding JsonPreviewState}" Foreground="#486581" />
+          <TextBlock Text="JSON Preview (Live)" FontWeight="SemiBold" FontSize="14" />
+          <TextBox Text="{Binding JsonPreviewContent}"
+                   IsReadOnly="True"
+                   AcceptsReturn="True"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                   FontFamily="Consolas"
+                   FontSize="13"
+                   Height="260" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="1" Margin="12,0,0,0" BorderBrush="#BCCCDC" BorderThickness="1" CornerRadius="8" Padding="8">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Source Settings" FontWeight="SemiBold" FontSize="14" />
+          <ListBox ItemsSource="{Binding SourceSettings}" MaxHeight="130">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="170,*">
+                  <TextBlock Grid.Column="0" Text="{Binding Key}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                  <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <TextBlock Text="Target Settings" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <ListBox ItemsSource="{Binding TargetSettings}" MaxHeight="130">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="170,*">
+                  <TextBlock Grid.Column="0" Text="{Binding Key}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                  <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <TextBlock Text="Source Preview Columns" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Load Source Preview" Click="OnLoadSourcePreviewClick" />
+          </StackPanel>
+          <Border BorderBrush="#D9E2EC" BorderThickness="1" CornerRadius="6" Padding="6" MaxHeight="90">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding SourceColumnsPreview}" />
+            </ScrollViewer>
+          </Border>
+
+          <TextBlock Text="Mappings" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Add Mapping" Click="OnAddMappingClick" />
+            <Button Content="Remove Selected" Click="OnRemoveMappingClick" />
+          </StackPanel>
+          <ListBox ItemsSource="{Binding MappingRows}"
+                   SelectedItem="{Binding SelectedMappingRow, Mode=TwoWay}"
+                   MaxHeight="190">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="*,*,Auto" Margin="0,2,0,2">
+                  <TextBox Grid.Column="0" Text="{Binding SourceField, Mode=TwoWay}" Watermark="Source field" Margin="0,0,6,0" />
+                  <TextBox Grid.Column="1" Text="{Binding TargetField, Mode=TwoWay}" Watermark="Target field" Margin="0,0,6,0" />
+                  <CheckBox Grid.Column="2" IsChecked="{Binding IsRequired, Mode=TwoWay}" VerticalAlignment="Center" Content="Required" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <TextBlock Text="Validation Errors" FontWeight="SemiBold" FontSize="14" />
+          <ListBox ItemsSource="{Binding ValidationErrors}" MaxHeight="120" />
+
+          <TextBlock Text="Error Details" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <TextBlock Text="{Binding LastErrorSummary}" Foreground="#9B1C1C" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Copy Error Details" Click="OnCopyErrorDetailsClick" IsEnabled="{Binding HasErrorDetails}" />
+          </StackPanel>
+          <TextBox Text="{Binding LastErrorDetails}"
+                   IsReadOnly="True"
+                   IsVisible="{Binding HasErrorDetails}"
+                   AcceptsReturn="True"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   Height="90"
+                   FontFamily="Consolas"
+                   FontSize="11" />
+
+          <TextBlock Text="Log Viewer" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <Grid ColumnDefinitions="Auto,120,Auto,*,Auto" RowDefinitions="Auto">
+            <TextBlock Grid.Column="0" Text="Level" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding LogLevelOptions}"
+                      SelectedItem="{Binding SelectedLogLevel, Mode=TwoWay}" />
+            <TextBlock Grid.Column="2" Text="Search" VerticalAlignment="Center" Margin="10,0,6,0" />
+            <TextBox Grid.Column="3" Text="{Binding LogSearchText, Mode=TwoWay}" Watermark="Filter logs..." />
+            <Button Grid.Column="4" Content="Export" Click="OnExportLogsClick" Margin="10,0,0,0" />
+          </Grid>
+          <ListBox ItemsSource="{Binding FilteredLogs}" MaxHeight="150" />
+
+          <TextBlock Text="Dry-Run Logs" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <ListBox ItemsSource="{Binding DryRunLogs}" MaxHeight="130" />
+
+          <TextBlock Text="Dry-Run Summary (JSON)" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <TextBox Text="{Binding DryRunSummaryJson}"
+                   IsReadOnly="True"
+                   AcceptsReturn="True"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   Height="120"
+                   FontFamily="Consolas"
+                   FontSize="12" />
+
+          <TextBlock Text="Run Progress" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <ProgressBar IsVisible="{Binding IsRunInProgress}" IsIndeterminate="True" Height="8" />
+
+          <TextBlock Text="Run Logs" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <ListBox ItemsSource="{Binding RunLogs}" MaxHeight="120" />
+
+          <TextBlock Text="Run Summary (JSON)" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <TextBox Text="{Binding RunSummaryJson}"
+                   IsReadOnly="True"
+                   AcceptsReturn="True"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   Height="120"
+                   FontFamily="Consolas"
+                   FontSize="12" />
+
+          <TextBlock Text="Connector Metadata" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,0" />
+          <TextBox Text="{Binding ConnectorMetadata}"
+                   IsReadOnly="True"
+                   AcceptsReturn="True"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   Height="120" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Border Grid.Row="4" Background="#D9E2EC" Padding="10">
+      <TextBlock Text="{Binding StatusMessage}" />
+    </Border>
+  </Grid>
+</Window>
