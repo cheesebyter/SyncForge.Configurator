@@ -84,6 +84,34 @@ dotnet build .\src\SyncForge.sln -c Release
 dotnet run --project ..\SyncForge.Configurator\SyncForge.Configurator.csproj
 ```
 
+## Build-Skripte (Configurator + Plugins)
+
+Fuer interne Builds stehen Skripte bereit, die den Configurator publishen und die verfuegbaren Plugin-Repositories mitbauen.
+Die Plugin-Ausgaben landen unter `artifacts/publish/plugins/<PluginName>`.
+
+PowerShell (Windows):
+
+```powershell
+Set-Location .\SyncForge.Configurator
+.\scripts\build-configurator-with-plugins.ps1 -Configuration Release
+```
+
+Bash (Linux/macOS):
+
+```bash
+cd ./SyncForge.Configurator
+chmod +x ./scripts/build-configurator-with-plugins.sh
+./scripts/build-configurator-with-plugins.sh --configuration Release
+```
+
+Wichtige Optionen:
+
+- `--skip-plugin-publish` / `-SkipPluginPublish`
+- `--skip-configurator-publish` / `-SkipConfiguratorPublish`
+- `--output-root <path>` / `-OutputRoot <path>`
+
+Hinweis: Fehlende Plugin-Repositories werden mit Warnung uebersprungen, damit der Build trotzdem laeuft.
+
 ## Abhaengigkeiten
 
 ### Projektverweise
