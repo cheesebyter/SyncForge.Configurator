@@ -112,6 +112,34 @@ Wichtige Optionen:
 
 Hinweis: Fehlende Plugin-Repositories werden mit Warnung uebersprungen, damit der Build trotzdem laeuft.
 
+## Packaging (EPIC 12)
+
+Windows ZIP (framework-dependent):
+
+```powershell
+Set-Location .\SyncForge.Configurator
+.\scripts\package-configurator-windows.ps1 -Configuration Release
+```
+
+Windows ZIP (self-contained):
+
+```powershell
+.\scripts\package-configurator-windows.ps1 -Configuration Release -SelfContained
+```
+
+Linux tar.gz (self-contained):
+
+```bash
+cd ./SyncForge.Configurator
+chmod +x ./scripts/package-configurator-linux.sh
+./scripts/package-configurator-linux.sh --configuration Release
+```
+
+## Quickstart
+
+- 10-Minuten-Guide: `docs/quickstart-10-min.md`
+- Screenshot-Ablage: `docs/screenshots/README.md`
+
 ## Abhaengigkeiten
 
 ### Projektverweise
