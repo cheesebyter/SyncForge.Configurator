@@ -1,5 +1,5 @@
 using Avalonia;
-
+using Avalonia.Diagnostics;
 namespace SyncForge.Configurator;
 
 internal sealed class Program

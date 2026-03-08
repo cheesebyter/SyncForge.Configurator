@@ -1,0 +1,98 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral100}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Text}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral400}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="PART_BackgroundBorder"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}">
+          <ContentPresenter x:Name="PART_ContentPresenter"
+                            Margin="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            RecognizesAccessKey="True" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="Button:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral200}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral500}" />
+  </Style>
+
+  <Style Selector="Button:pressed">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral300}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral600}" />
+  </Style>
+
+  <Style Selector="Button:disabled">
+    <Setter Property="Opacity" Value="0.55" />
+  </Style>
+
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Primary}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Primary}" />
+  </Style>
+
+  <Style Selector="Button.primary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.PrimaryHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.PrimaryHover}" />
+  </Style>
+
+  <Style Selector="Button.primary:pressed">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.PrimaryPressed}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.PrimaryPressed}" />
+  </Style>
+
+  <Style Selector="Button.secondary">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Text}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Border}" />
+  </Style>
+
+  <Style Selector="Button.secondary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral200}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Text}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral500}" />
+  </Style>
+
+  <Style Selector="Button.secondary:pressed">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral300}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Text}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral600}" />
+  </Style>
+
+  <Style Selector="Button.danger">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Danger}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Danger}" />
+  </Style>
+
+  <Style Selector="Button.danger:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Warning}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Warning}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Surface}" />
+  </Style>
+
+  <Style Selector="Button.danger:pressed">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Secondary}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Secondary}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Surface}" />
+  </Style>
+</Styles>

@@ -1,0 +1,60 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Text}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Border}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CaretBrush" Value="{DynamicResource SfBrush.Primary}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource SfBrush.Accent}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource SfBrush.Surface}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <ScrollViewer Name="PART_ScrollViewer"
+                        HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollBarVisibility="Auto">
+            <TextPresenter Name="PART_TextPresenter"
+                           CaretBrush="{TemplateBinding CaretBrush}"
+                           SelectionBrush="{TemplateBinding SelectionBrush}"
+                           SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}" />
+          </ScrollViewer>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="TextBox:pointerover:not(:focus)">
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral500}" />
+  </Style>
+
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Primary}" />
+  </Style>
+
+  <Style Selector="TextBox:disabled">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral200}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Neutral600}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral300}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- Validation-ready semantic classes for future binding-based validation states. -->
+  <Style Selector="TextBox.invalid">
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Danger}" />
+  </Style>
+
+  <Style Selector="TextBox.warning">
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Warning}" />
+  </Style>
+
+  <Style Selector="TextBox.success">
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Success}" />
+  </Style>
+</Styles>

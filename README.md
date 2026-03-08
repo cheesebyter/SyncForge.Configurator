@@ -123,7 +123,6 @@ Hinweis: Fehlende Plugin-Repositories werden mit Warnung uebersprungen, damit de
 
 - `Avalonia`
 - `Avalonia.Desktop`
-- `Avalonia.Themes.Fluent`
 - `Avalonia.Fonts.Inter`
 - `DocumentFormat.OpenXml` (XLSX Source Preview)
 - `Microsoft.Extensions.DependencyInjection`
@@ -133,11 +132,23 @@ Hinweis: Fehlende Plugin-Repositories werden mit Warnung uebersprungen, damit de
 - `Views/MainWindow.axaml`
 - `Views/MainWindow.axaml.cs`
 - `ViewModels/MainWindowViewModel.cs`
+- `docs/design-system.md`
+- `Styles/SyncForgeTheme.axaml`
+- `Styles/Tokens.axaml`
+- `Styles/Controls/Button.axaml`
+- `Styles/Controls/TextBox.axaml`
+- `Styles/Controls/ComboBox.axaml`
+- `Styles/Controls/ListBox.axaml`
+- `Styles/Controls/ScrollBar.axaml`
 - `Services/ConnectorDiscoveryService.cs`
 - `Services/ConnectorConfigSchemaService.cs`
 - `Services/SourcePreviewService.cs`
 - `Services/DryRunExecutionService.cs`
 - `Services/JsonLinesConnectors.cs`
+
+## Design-System Dokumentation
+
+- Vollstaendige Dokumentation: `docs/design-system.md`
 
 ## Hinweise zur Plugin-Aufloesung
 

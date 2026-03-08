@@ -1,0 +1,64 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!-- Semantic colors -->
+    <Color x:Key="SfColor.Primary">#FF0E7490</Color>
+    <Color x:Key="SfColor.Secondary">#FF334E68</Color>
+    <Color x:Key="SfColor.Accent">#FF0EA5E9</Color>
+    <Color x:Key="SfColor.Danger">#FF9B1C1C</Color>
+    <Color x:Key="SfColor.Success">#FF137333</Color>
+    <Color x:Key="SfColor.Warning">#FFB7791F</Color>
+
+    <!-- Neutral scale -->
+    <Color x:Key="SfColor.Neutral100">#FFF5F7FA</Color>
+    <Color x:Key="SfColor.Neutral200">#FFD9E2EC</Color>
+    <Color x:Key="SfColor.Neutral300">#FFBCCCDC</Color>
+    <Color x:Key="SfColor.Neutral400">#FF9FB3C8</Color>
+    <Color x:Key="SfColor.Neutral500">#FF829AB1</Color>
+    <Color x:Key="SfColor.Neutral600">#FF627D98</Color>
+    <Color x:Key="SfColor.Neutral700">#FF486581</Color>
+    <Color x:Key="SfColor.Neutral800">#FF334E68</Color>
+    <Color x:Key="SfColor.Neutral900">#FF102A43</Color>
+
+    <!-- Surface/text roles -->
+    <Color x:Key="SfColor.Surface">#FFFFFFFF</Color>
+    <Color x:Key="SfColor.SurfaceAlt">#FFF8FBFF</Color>
+    <Color x:Key="SfColor.Text">#FF102A43</Color>
+    <Color x:Key="SfColor.TextMuted">#FF486581</Color>
+
+    <!-- Color state aliases -->
+    <Color x:Key="SfColor.PrimaryHover">#FF0B5F76</Color>
+    <Color x:Key="SfColor.PrimaryPressed">#FF094A5B</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="SfBrush.Primary" Color="{DynamicResource SfColor.Primary}" />
+    <SolidColorBrush x:Key="SfBrush.Secondary" Color="{DynamicResource SfColor.Secondary}" />
+    <SolidColorBrush x:Key="SfBrush.Accent" Color="{DynamicResource SfColor.Accent}" />
+    <SolidColorBrush x:Key="SfBrush.Danger" Color="{DynamicResource SfColor.Danger}" />
+    <SolidColorBrush x:Key="SfBrush.Success" Color="{DynamicResource SfColor.Success}" />
+    <SolidColorBrush x:Key="SfBrush.Warning" Color="{DynamicResource SfColor.Warning}" />
+
+    <SolidColorBrush x:Key="SfBrush.Neutral100" Color="{DynamicResource SfColor.Neutral100}" />
+    <SolidColorBrush x:Key="SfBrush.Neutral200" Color="{DynamicResource SfColor.Neutral200}" />
+    <SolidColorBrush x:Key="SfBrush.Neutral300" Color="{DynamicResource SfColor.Neutral300}" />
+    <SolidColorBrush x:Key="SfBrush.Neutral400" Color="{DynamicResource SfColor.Neutral400}" />
+    <SolidColorBrush x:Key="SfBrush.Neutral500" Color="{DynamicResource SfColor.Neutral500}" />
+    <SolidColorBrush x:Key="SfBrush.Neutral600" Color="{DynamicResource SfColor.Neutral600}" />
+    <SolidColorBrush x:Key="SfBrush.Neutral700" Color="{DynamicResource SfColor.Neutral700}" />
+    <SolidColorBrush x:Key="SfBrush.Neutral800" Color="{DynamicResource SfColor.Neutral800}" />
+    <SolidColorBrush x:Key="SfBrush.Neutral900" Color="{DynamicResource SfColor.Neutral900}" />
+
+    <SolidColorBrush x:Key="SfBrush.Surface" Color="{DynamicResource SfColor.Surface}" />
+    <SolidColorBrush x:Key="SfBrush.SurfaceAlt" Color="{DynamicResource SfColor.SurfaceAlt}" />
+    <SolidColorBrush x:Key="SfBrush.Text" Color="{DynamicResource SfColor.Text}" />
+    <SolidColorBrush x:Key="SfBrush.TextMuted" Color="{DynamicResource SfColor.TextMuted}" />
+
+    <SolidColorBrush x:Key="SfBrush.PrimaryHover" Color="{DynamicResource SfColor.PrimaryHover}" />
+    <SolidColorBrush x:Key="SfBrush.PrimaryPressed" Color="{DynamicResource SfColor.PrimaryPressed}" />
+    <SolidColorBrush x:Key="SfBrush.Border" Color="{DynamicResource SfColor.Neutral300}" />
+    <SolidColorBrush x:Key="SfBrush.Background" Color="{DynamicResource SfColor.Neutral100}" />
+    <SolidColorBrush x:Key="SfBrush.Selection" Color="{DynamicResource SfColor.Primary}" />
+    <SolidColorBrush x:Key="SfBrush.SelectionHover" Color="{DynamicResource SfColor.PrimaryHover}" />
+    <SolidColorBrush x:Key="SfBrush.SelectionForeground" Color="{DynamicResource SfColor.Surface}" />
+  </Styles.Resources>
+</Styles>
