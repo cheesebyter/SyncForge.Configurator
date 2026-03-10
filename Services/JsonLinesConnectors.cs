@@ -13,24 +13,26 @@ public sealed class JsonLinesSourceConnector : ISourceConnector
         _filePath = filePath;
     }
 
-    public Task<IAsyncEnumerable<DataRecord>> ReadAsync(JobContext context)
+    public Task<IAsyncEnumerable<DataRecord>> ReadAsync(JobContext context, CancellationToken cancellationToken)
     {
         if (!File.Exists(_filePath))
         {
             throw new FileNotFoundException($"Source JSONL file not found: {_filePath}", _filePath);
         }
 
-        return Task.FromResult(ReadInternalAsync());
+        return Task.FromResult(ReadInternalAsync(cancellationToken));
     }
 
-    private async IAsyncEnumerable<DataRecord> ReadInternalAsync()
+    private async IAsyncEnumerable<DataRecord> ReadInternalAsync(
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         using var stream = File.OpenRead(_filePath);
         using var reader = new StreamReader(stream);
 
         while (true)
         {
-            var line = await reader.ReadLineAsync();
+            cancellationToken.ThrowIfCancellationRequested();
+            var line = await reader.ReadLineAsync(cancellationToken);
             if (line is null)
             {
                 break;
@@ -62,12 +64,15 @@ public sealed class JsonLinesTargetConnector : ITargetConnector
         _filePath = filePath;
     }
 
-    public async Task<WriteResult> WriteAsync(IAsyncEnumerable<DataRecord> records, JobContext context)
+    public async Task<WriteResult> WriteAsync(
+        IAsyncEnumerable<DataRecord> records,
+        JobContext context,
+        CancellationToken cancellationToken)
     {
         if (context.DryRun)
         {
             long dryRunCount = 0;
-            await foreach (var _ in records)
+            await foreach (var _ in records.WithCancellation(cancellationToken))
             {
                 dryRunCount++;
             }
@@ -102,8 +107,8 @@ public sealed class JsonLinesTargetConnector : ITargetConnector
             }
         }
 
-        var outputRecords = await BuildOutputRecordsAsync(records, strategyMode, context.StrategyKeyFields);
-        await File.WriteAllLinesAsync(_filePath, outputRecords);
+        var outputRecords = await BuildOutputRecordsAsync(records, strategyMode, context.StrategyKeyFields, cancellationToken);
+        await File.WriteAllLinesAsync(_filePath, outputRecords, cancellationToken);
 
         return new WriteResult
         {
@@ -124,7 +129,8 @@ public sealed class JsonLinesTargetConnector : ITargetConnector
     private async Task<List<string>> BuildOutputRecordsAsync(
         IAsyncEnumerable<DataRecord> records,
         string strategyMode,
-        IReadOnlyList<string> strategyKeyFields)
+        IReadOnlyList<string> strategyKeyFields,
+        CancellationToken cancellationToken)
     {
         if (string.Equals(strategyMode, "UpsertByKey", StringComparison.OrdinalIgnoreCase) && strategyKeyFields.Count > 0)
         {
@@ -132,7 +138,7 @@ public sealed class JsonLinesTargetConnector : ITargetConnector
 
             if (File.Exists(_filePath))
             {
-                foreach (var existingLine in await File.ReadAllLinesAsync(_filePath))
+                foreach (var existingLine in await File.ReadAllLinesAsync(_filePath, cancellationToken))
                 {
                     if (string.IsNullOrWhiteSpace(existingLine))
                     {
@@ -145,7 +151,7 @@ public sealed class JsonLinesTargetConnector : ITargetConnector
                 }
             }
 
-            await foreach (var record in records)
+            await foreach (var record in records.WithCancellation(cancellationToken))
             {
                 var key = BuildCompositeKey(record, strategyKeyFields);
                 var jsonLine = JsonSerializer.Serialize(record.Fields);
@@ -159,10 +165,10 @@ public sealed class JsonLinesTargetConnector : ITargetConnector
 
         if (string.Equals(strategyMode, "InsertOnly", StringComparison.OrdinalIgnoreCase) && File.Exists(_filePath))
         {
-            lines.AddRange(await File.ReadAllLinesAsync(_filePath));
+            lines.AddRange(await File.ReadAllLinesAsync(_filePath, cancellationToken));
         }
 
-        await foreach (var record in records)
+        await foreach (var record in records.WithCancellation(cancellationToken))
         {
             lines.Add(JsonSerializer.Serialize(record.Fields));
         }

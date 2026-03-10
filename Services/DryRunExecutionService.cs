@@ -323,6 +323,16 @@ public static class DryRunExecutionService
             _log("ERROR " + RenderMessage(messageTemplate, args));
         }
 
+        public void Error(Exception exception, string messageTemplate, params object[] args)
+        {
+            _log("ERROR " + RenderMessage(messageTemplate, args));
+            _log($"ERROR {exception.GetType().Name}: {exception.Message}");
+            if (!string.IsNullOrWhiteSpace(exception.StackTrace))
+            {
+                _log(exception.StackTrace);
+            }
+        }
+
         private static string RenderMessage(string template, object[] args)
         {
             var rendered = template;
