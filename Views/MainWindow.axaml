@@ -16,6 +16,7 @@
           <Button Classes="secondary" Content="Save" Click="OnSaveClick" />
           <Button Classes="secondary" Content="Save As" Click="OnSaveAsClick" />
           <Button Classes="primary" Content="Validate" Click="OnValidateClick" />
+          <Button Classes="primary" Content="Preflight" Click="OnPreflightClick" />
           <Button Classes="primary" Content="Dry-Run" Click="OnDryRunClick" />
           <Button Classes="primary" Content="Run" Click="OnRunClick" />
         </StackPanel>
@@ -27,6 +28,8 @@
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock Text="Current File:" FontWeight="SemiBold" />
           <TextBlock Text="{Binding CurrentFileDisplayName}" />
+          <TextBlock Text="{Binding UnsavedIndicator}" Foreground="{DynamicResource SfBrush.Warning}" FontWeight="Bold" />
+          <CheckBox Content="Unsaved Prompt aus (Session)" IsChecked="{Binding SkipUnsavedChangesPromptInSession, Mode=TwoWay}" Margin="10,0,0,0" />
         </StackPanel>
 
         <Border Classes="panel"
@@ -38,6 +41,15 @@
               <TextBlock Classes="section-title" Text="New Job Wizard" />
               <TextBlock Classes="muted" Text="{Binding WizardStepText}" VerticalAlignment="Center" />
             </StackPanel>
+
+            <Grid ColumnDefinitions="180,*,Auto" RowDefinitions="Auto">
+              <TextBlock Grid.Column="0" Text="Starter Template" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1"
+                        Margin="0,0,8,0"
+                        ItemsSource="{Binding JobTemplateOptions}"
+                        SelectedItem="{Binding SelectedJobTemplate, Mode=TwoWay}" />
+              <Button Grid.Column="2" Classes="secondary" Content="Apply Template" Click="OnApplyTemplateClick" />
+            </Grid>
 
             <TextBlock IsVisible="{Binding IsWizardStep1}" Text="Step 1: Select source connector" FontWeight="SemiBold" />
             <ComboBox IsVisible="{Binding IsWizardStep1}"
@@ -138,7 +150,7 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="10">
            
-            <Expander Header="Connector Configuration" IsExpanded="True">
+            <Expander Header="Connector Configuration" IsExpanded="{Binding IsConnectorConfigExpanded, Mode=TwoWay}">
               <StackPanel Spacing="8" Margin="0,8,0,0">
                 <TextBlock Classes="section-title" Text="Source Settings" />
                 <ListBox ItemsSource="{Binding SourceSettings}" MaxHeight="120">
@@ -195,10 +207,28 @@
               </StackPanel>
             </Expander>
 
-            <Expander Header="Validation and Errors" IsExpanded="True">
+            <Expander Header="Validation and Errors" IsExpanded="{Binding IsValidationExpanded, Mode=TwoWay}">
               <StackPanel Spacing="8" Margin="0,8,0,0">
                 <TextBlock Classes="section-title" Text="Validation Errors" />
-                <ListBox ItemsSource="{Binding ValidationErrors}" MaxHeight="110" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="secondary" Content="Go To Selected Error" Click="OnNavigateValidationErrorClick" />
+                </StackPanel>
+                <ListBox ItemsSource="{Binding ValidationErrors}"
+                         SelectedItem="{Binding SelectedValidationError, Mode=TwoWay}"
+                         MaxHeight="110" />
+
+                <TextBlock Classes="section-title" Text="Preflight Findings" Margin="0,8,0,0" />
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding PreflightState}" Classes="muted" />
+                  <Button Grid.Row="0" Grid.Column="1" Classes="secondary" Content="Export Preflight" Click="OnExportPreflightClick" Margin="8,0,0,0" />
+                  <ListBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding PreflightFindings}" MaxHeight="120" Margin="0,6,0,0">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Rendered}" TextWrapping="Wrap" />
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                </Grid>
 
                 <TextBlock Classes="section-title" Text="Error Details" Margin="0,8,0,0" />
                 <TextBlock Classes="muted" Text="{Binding LastErrorSummary}" Foreground="{DynamicResource SfBrush.Danger}" />
@@ -216,7 +246,7 @@
               </StackPanel>
             </Expander>
 
-            <Expander Header="Logs and Diagnostics" IsExpanded="False">
+            <Expander Header="Logs and Diagnostics" IsExpanded="{Binding IsLogsExpanded, Mode=TwoWay}">
               <StackPanel Spacing="8" Margin="0,8,0,0">
                 <TextBlock Classes="section-title" Text="Log Viewer" />
                 <Grid ColumnDefinitions="Auto,120,Auto,*,Auto" RowDefinitions="Auto">
@@ -238,7 +268,7 @@
               </StackPanel>
             </Expander>
 
-            <Expander Header="Summaries and Metadata" IsExpanded="False">
+            <Expander Header="Summaries and Metadata" IsExpanded="{Binding IsSummaryExpanded, Mode=TwoWay}">
               <StackPanel Spacing="8" Margin="0,8,0,0">
                 <TextBlock Classes="section-title" Text="Dry-Run Summary (JSON)" />
                 <TextBox Text="{Binding DryRunSummaryJson}"

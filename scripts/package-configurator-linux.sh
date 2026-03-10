@@ -7,6 +7,9 @@ RUNTIME_IDENTIFIER="linux-x64"
 SELF_CONTAINED="true"
 SKIP_BUILD="false"
 OUTPUT_ROOT=""
+VERSION="0.2.1"
+COMMIT=""
+BUILD_TIMESTAMP_UTC=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -34,6 +37,18 @@ while [[ $# -gt 0 ]]; do
       OUTPUT_ROOT="$2"
       shift 2
       ;;
+    --version)
+      VERSION="$2"
+      shift 2
+      ;;
+    --commit)
+      COMMIT="$2"
+      shift 2
+      ;;
+    --build-timestamp-utc)
+      BUILD_TIMESTAMP_UTC="$2"
+      shift 2
+      ;;
     -h|--help)
       cat <<'EOF'
 Usage: package-configurator-linux.sh [options]
@@ -45,6 +60,9 @@ Options:
       --self-contained <true|false>     Publish self-contained (default: true)
       --skip-build                       Skip build-configurator-with-plugins step
   -o, --output-root <path>              Output package directory
+      --version <value>                  Semantic version metadata (default: 0.2.1)
+      --commit <sha>                     Source commit metadata (default: git HEAD)
+      --build-timestamp-utc <iso8601>    Build timestamp metadata (default: now)
 EOF
       exit 0
       ;;
@@ -73,7 +91,10 @@ if [[ "$SKIP_BUILD" != "true" ]]; then
   "$SCRIPT_ROOT/build-configurator-with-plugins.sh" \
     --configuration "$CONFIGURATION" \
     --framework "$FRAMEWORK" \
-    --output-root "$PUBLISH_ROOT"
+    --output-root "$PUBLISH_ROOT" \
+    --version "$VERSION" \
+    --commit "$COMMIT" \
+    --build-timestamp-utc "$BUILD_TIMESTAMP_UTC"
 fi
 
 if [[ "$SELF_CONTAINED" == "true" ]]; then

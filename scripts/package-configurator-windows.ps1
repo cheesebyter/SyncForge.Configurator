@@ -6,7 +6,10 @@ param(
     [string]$RuntimeIdentifier = "win-x64",
     [switch]$SelfContained,
     [switch]$SkipBuild,
-    [string]$OutputRoot = ""
+    [string]$OutputRoot = "",
+    [string]$Version = "0.2.1",
+    [string]$Commit = "",
+    [string]$BuildTimestampUtc = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,7 +48,7 @@ New-Item -Path $publishRoot -ItemType Directory -Force | Out-Null
 
 if (-not $SkipBuild) {
     $buildScript = Join-Path $scriptRoot "build-configurator-with-plugins.ps1"
-    & $buildScript -Configuration $Configuration -Framework $Framework -OutputRoot $publishRoot
+    & $buildScript -Configuration $Configuration -Framework $Framework -OutputRoot $publishRoot -Version $Version -Commit $Commit -BuildTimestampUtc $BuildTimestampUtc
     if ($LASTEXITCODE -ne 0) {
         throw "build-configurator-with-plugins.ps1 failed with exit code $LASTEXITCODE"
     }
@@ -74,6 +77,16 @@ if ($SelfContained) {
     $pluginTarget = Join-Path $selfContainedRoot "plugins"
     if (Test-Path $pluginSource) {
         Copy-Item $pluginSource $pluginTarget -Recurse -Force
+    }
+
+    $trustSource = Join-Path $publishRoot "trusted-plugins.json"
+    if (Test-Path $trustSource) {
+        Copy-Item $trustSource (Join-Path $selfContainedRoot "trusted-plugins.json") -Force
+    }
+
+    $metadataSource = Join-Path $publishRoot "build-metadata.json"
+    if (Test-Path $metadataSource) {
+        Copy-Item $metadataSource (Join-Path $selfContainedRoot "build-metadata.json") -Force
     }
 
     Remove-Item $publishRoot -Recurse -Force

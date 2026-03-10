@@ -4,7 +4,10 @@ param(
     [string]$Framework = "net8.0",
     [string]$OutputRoot = "",
     [switch]$SkipConfiguratorPublish,
-    [switch]$SkipPluginPublish
+    [switch]$SkipPluginPublish,
+    [string]$Version = "0.2.1",
+    [string]$Commit = "",
+    [string]$BuildTimestampUtc = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,9 +25,40 @@ function Invoke-DotNet {
     }
 }
 
+function Get-Sha256Hex {
+    param([Parameter(Mandatory = $true)][string]$FilePath)
+    return (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+function Get-DeterministicPublishProperties {
+    return @(
+        "-p:ContinuousIntegrationBuild=true",
+        "-p:Deterministic=true",
+        "-p:Version=$Version",
+        "-p:InformationalVersion=$informationalVersion",
+        "-p:SourceRevisionId=$Commit",
+        "-p:RepositoryCommit=$Commit"
+    )
+}
+
 $scriptRoot = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 $configuratorRoot = Split-Path -Path $scriptRoot -Parent
 $workspaceRoot = Split-Path -Path $configuratorRoot -Parent
+
+if ([string]::IsNullOrWhiteSpace($Commit)) {
+    try {
+        $Commit = (& git -C $workspaceRoot rev-parse --verify HEAD).Trim()
+    }
+    catch {
+        $Commit = "unknown"
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($BuildTimestampUtc)) {
+    $BuildTimestampUtc = [DateTimeOffset]::UtcNow.ToString("O")
+}
+
+$informationalVersion = "$Version+$Commit"
 
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $configuratorRoot "artifacts\publish"
@@ -55,7 +89,7 @@ if (-not $SkipConfiguratorPublish) {
         "-c", $Configuration,
         "-f", $Framework,
         "-o", $OutputRoot
-    )
+    ) + (Get-DeterministicPublishProperties)
 }
 
 if (-not $SkipPluginPublish) {
@@ -76,10 +110,42 @@ if (-not $SkipPluginPublish) {
             "-c", $Configuration,
             "-f", $Framework,
             "-o", $pluginOutput
-        )
+        ) + (Get-DeterministicPublishProperties)
     }
 }
+
+$trustedPlugins = @()
+if (Test-Path $pluginsOutputRoot) {
+    $pluginDlls = Get-ChildItem -Path $pluginsOutputRoot -Filter "SyncForge.Plugin.*.dll" -Recurse -File
+    foreach ($dll in $pluginDlls) {
+        $trustedPlugins += [ordered]@{
+            assemblyName = [System.IO.Path]::GetFileNameWithoutExtension($dll.Name)
+            sha256 = (Get-Sha256Hex -FilePath $dll.FullName)
+        }
+    }
+}
+
+$trustManifestPath = Join-Path $OutputRoot "trusted-plugins.json"
+$trustDocument = [ordered]@{
+    plugins = $trustedPlugins
+}
+$trustDocument | ConvertTo-Json -Depth 6 | Set-Content -Path $trustManifestPath -Encoding UTF8
+
+$metadataPath = Join-Path $OutputRoot "build-metadata.json"
+$metadata = [ordered]@{
+    version = $Version
+    commit = $Commit
+    buildTimestampUtc = $BuildTimestampUtc
+    configuration = $Configuration
+    framework = $Framework
+    outputRoot = (Resolve-Path -Path $OutputRoot).Path
+    pluginsOutputRoot = (Resolve-Path -Path $pluginsOutputRoot).Path
+    trustedPluginsFile = $trustManifestPath
+}
+$metadata | ConvertTo-Json -Depth 6 | Set-Content -Path $metadataPath -Encoding UTF8
 
 Write-Host "Build complete."
 Write-Host "Run Configurator from: $OutputRoot"
 Write-Host "Plugin directory in UI: $pluginsOutputRoot"
+Write-Host "Build metadata: $metadataPath"
+Write-Host "Trusted plugin manifest: $trustManifestPath"

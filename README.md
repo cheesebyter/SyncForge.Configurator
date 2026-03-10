@@ -109,8 +109,16 @@ Wichtige Optionen:
 - `--skip-plugin-publish` / `-SkipPluginPublish`
 - `--skip-configurator-publish` / `-SkipConfiguratorPublish`
 - `--output-root <path>` / `-OutputRoot <path>`
+- `--version <value>` / `-Version <value>`
+- `--commit <sha>` / `-Commit <sha>`
+- `--build-timestamp-utc <iso8601>` / `-BuildTimestampUtc <iso8601>`
 
 Hinweis: Fehlende Plugin-Repositories werden mit Warnung uebersprungen, damit der Build trotzdem laeuft.
+
+Die Build-Skripte schreiben zusaetzlich:
+
+- `build-metadata.json` (Version, Commit, Build-Zeit, Output-Pfade)
+- `trusted-plugins.json` (SHA256-Allowlist fuer Plugin-Trust-Policy)
 
 ## Packaging (EPIC 12)
 

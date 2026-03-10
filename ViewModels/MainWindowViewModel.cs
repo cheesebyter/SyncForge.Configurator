@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using SyncForge.Abstractions.Configuration;
 using SyncForge.Configurator.Services;
 
@@ -38,10 +39,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _wizardSourcePath;
     private string _wizardTargetPath;
     private string _wizardUpsertKeys;
+    private string _selectedJobTemplate;
+    private bool _isDirty;
+    private bool _suppressDirtyTracking;
+    private bool _skipUnsavedChangesPromptInSession;
+    private string? _selectedValidationError;
+    private bool _isConnectorConfigExpanded;
+    private bool _isValidationExpanded;
+    private bool _isLogsExpanded;
+    private bool _isSummaryExpanded;
+    private string _preflightState;
     private bool _syncingConnectorSelection;
     private bool _syncingSettings;
     private bool _syncingMappings;
     private bool _syncingFromJsonEditor;
+    private readonly Dictionary<string, List<PreflightFinding>> _preflightCache =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public MainWindowViewModel()
     {
@@ -62,15 +75,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         _wizardSourcePath = "../data/customers.csv";
         _wizardTargetPath = "../data/output.jsonl";
         _wizardUpsertKeys = "id";
+        _selectedJobTemplate = "Custom";
+        _isConnectorConfigExpanded = true;
+        _isValidationExpanded = true;
+        _preflightState = "No preflight executed.";
 
         ReloadConnectors();
         ReloadMappingsFromCurrentJson();
         RefreshJsonPreviewAndSyncUi();
+        MarkClean();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<string> ValidationErrors { get; } = [];
+
+    public ObservableCollection<PreflightFinding> PreflightFindings { get; } = [];
 
     public ObservableCollection<ConnectorDescriptor> SourceConnectors { get; } = [];
 
@@ -105,6 +125,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         StrategyMode.UpsertByKey.ToString()
     ];
 
+    public ObservableCollection<string> JobTemplateOptions { get; } =
+    [
+        "Custom",
+        "CSV -> MSSQL",
+        "REST -> JSONL",
+        "Excel -> REST"
+    ];
+
     private List<LogEntry> AllLogs { get; } = [];
 
     public string JsonContent
@@ -119,7 +147,121 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             _jsonContent = value;
             OnPropertyChanged();
+            if (!_suppressDirtyTracking)
+            {
+                MarkDirty();
+            }
+
             RefreshJsonPreviewAndSyncUi();
+        }
+    }
+
+    public bool HasUnsavedChanges => _isDirty;
+
+    public string UnsavedIndicator => _isDirty ? "*" : string.Empty;
+
+    public bool SkipUnsavedChangesPromptInSession
+    {
+        get => _skipUnsavedChangesPromptInSession;
+        set
+        {
+            if (_skipUnsavedChangesPromptInSession == value)
+            {
+                return;
+            }
+
+            _skipUnsavedChangesPromptInSession = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string? SelectedValidationError
+    {
+        get => _selectedValidationError;
+        set
+        {
+            if (_selectedValidationError == value)
+            {
+                return;
+            }
+
+            _selectedValidationError = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsConnectorConfigExpanded
+    {
+        get => _isConnectorConfigExpanded;
+        set
+        {
+            if (_isConnectorConfigExpanded == value)
+            {
+                return;
+            }
+
+            _isConnectorConfigExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsValidationExpanded
+    {
+        get => _isValidationExpanded;
+        set
+        {
+            if (_isValidationExpanded == value)
+            {
+                return;
+            }
+
+            _isValidationExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsLogsExpanded
+    {
+        get => _isLogsExpanded;
+        set
+        {
+            if (_isLogsExpanded == value)
+            {
+                return;
+            }
+
+            _isLogsExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsSummaryExpanded
+    {
+        get => _isSummaryExpanded;
+        set
+        {
+            if (_isSummaryExpanded == value)
+            {
+                return;
+            }
+
+            _isSummaryExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string PreflightState
+    {
+        get => _preflightState;
+        private set
+        {
+            if (_preflightState == value)
+            {
+                return;
+            }
+
+            _preflightState = value;
+            OnPropertyChanged();
         }
     }
 
@@ -487,6 +629,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public string SelectedJobTemplate
+    {
+        get => _selectedJobTemplate;
+        set
+        {
+            if (_selectedJobTemplate == value)
+            {
+                return;
+            }
+
+            _selectedJobTemplate = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ConnectorDescriptor? SelectedSourceConnector
     {
         get => _selectedSourceConnector;
@@ -551,12 +708,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ValidationErrors.Clear();
         ClearError();
         CurrentFilePath = null;
-        JsonContent = JobDefinitionJson.Serialize(CreateDefaultJob());
+        SetJsonContentWithoutDirty(JobDefinitionJson.Serialize(CreateDefaultJob()));
 
         SyncSelectionsFromJson();
         ReloadSettingsPanels();
         ReloadMappingsFromCurrentJson();
         SourceColumnsPreview.Clear();
+        LoadCachedPreflightForCurrentJob();
 
         StatusMessage = "New job initialized.";
     }
@@ -575,11 +733,64 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         WizardSourcePath = "../data/customers.csv";
         WizardTargetPath = "../data/output.jsonl";
         WizardUpsertKeys = "id";
+        SelectedJobTemplate = "Custom";
 
         WizardStep = 1;
         IsWizardVisible = true;
         ClearError();
         StatusMessage = "Wizard started.";
+    }
+
+    public void ApplySelectedTemplate()
+    {
+        switch (SelectedJobTemplate)
+        {
+            case "CSV -> MSSQL":
+                WizardJobName = "csv-to-mssql";
+                WizardStrategyMode = StrategyMode.UpsertByKey.ToString();
+                WizardSourcePath = "../data/customers.csv";
+                WizardTargetPath = "Server=.;Database=SyncForge;Trusted_Connection=True;";
+                WizardUpsertKeys = "id";
+                WizardSourceConnector = SourceConnectors.FirstOrDefault(item =>
+                    string.Equals(item.ConnectorType, "csv", StringComparison.OrdinalIgnoreCase));
+                WizardTargetConnector = TargetConnectors.FirstOrDefault(item =>
+                    string.Equals(item.ConnectorType, "mssql", StringComparison.OrdinalIgnoreCase));
+                break;
+
+            case "REST -> JSONL":
+                WizardJobName = "rest-to-jsonl";
+                WizardStrategyMode = StrategyMode.InsertOnly.ToString();
+                WizardSourcePath = "https://api.example.com/customers";
+                WizardTargetPath = "../data/rest-output.jsonl";
+                WizardUpsertKeys = "id";
+                WizardSourceConnector = SourceConnectors.FirstOrDefault(item =>
+                    string.Equals(item.ConnectorType, "rest", StringComparison.OrdinalIgnoreCase));
+                WizardTargetConnector = TargetConnectors.FirstOrDefault(item =>
+                    string.Equals(item.ConnectorType, "jsonl", StringComparison.OrdinalIgnoreCase));
+                break;
+
+            case "Excel -> REST":
+                WizardJobName = "excel-to-rest";
+                WizardStrategyMode = StrategyMode.InsertOnly.ToString();
+                WizardSourcePath = "../data/customers.xlsx";
+                WizardTargetPath = "https://api.example.com/import";
+                WizardUpsertKeys = "id";
+                WizardSourceConnector = SourceConnectors.FirstOrDefault(item =>
+                    string.Equals(item.ConnectorType, "xlsx", StringComparison.OrdinalIgnoreCase));
+                WizardTargetConnector = TargetConnectors.FirstOrDefault(item =>
+                    string.Equals(item.ConnectorType, "rest", StringComparison.OrdinalIgnoreCase));
+                break;
+
+            default:
+                WizardJobName = "new-job";
+                WizardStrategyMode = StrategyMode.InsertOnly.ToString();
+                WizardSourcePath = "../data/customers.csv";
+                WizardTargetPath = "../data/output.jsonl";
+                WizardUpsertKeys = "id";
+                break;
+        }
+
+        StatusMessage = $"Wizard template applied: {SelectedJobTemplate}";
     }
 
     public void CancelWizard()
@@ -631,13 +842,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             {
                 Type = WizardSourceConnector.ConnectorType,
                 Plugin = WizardSourceConnector.AssemblyName,
-                Settings = BuildWizardSettings(WizardSourceConnector.ConnectorType, WizardSourcePath)
+                Settings = BuildWizardSettings(WizardSourceConnector.ConnectorType, WizardSourcePath, isSource: true)
             },
             Target = new TargetDefinition
             {
                 Type = WizardTargetConnector.ConnectorType,
                 Plugin = WizardTargetConnector.AssemblyName,
-                Settings = BuildWizardSettings(WizardTargetConnector.ConnectorType, WizardTargetPath)
+                Settings = BuildWizardSettings(WizardTargetConnector.ConnectorType, WizardTargetPath, isSource: false)
             },
             Mappings =
             [
@@ -659,6 +870,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         };
 
         JsonContent = JobDefinitionJson.Serialize(definition);
+        MarkClean();
         ValidationErrors.Clear();
         ClearError();
         CurrentFilePath = null;
@@ -667,6 +879,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         SyncSelectionsFromJson();
         ReloadSettingsPanels();
         ReloadMappingsFromCurrentJson();
+        LoadCachedPreflightForCurrentJob();
 
         StatusMessage = "Wizard generated a new job JSON.";
     }
@@ -678,7 +891,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             var json = await File.ReadAllTextAsync(filePath);
             _ = JobDefinitionJson.Deserialize(json);
 
-            JsonContent = json;
+            SetJsonContentWithoutDirty(json);
             CurrentFilePath = filePath;
             ValidationErrors.Clear();
             ClearError();
@@ -687,6 +900,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             ReloadSettingsPanels();
             ReloadMappingsFromCurrentJson();
             SourceColumnsPreview.Clear();
+            LoadCachedPreflightForCurrentJob();
 
             StatusMessage = $"Loaded: {filePath}";
             return true;
@@ -711,13 +925,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             var normalizedJson = JobDefinitionJson.Serialize(parsed);
             await File.WriteAllTextAsync(filePath, normalizedJson);
 
-            JsonContent = normalizedJson;
+            SetJsonContentWithoutDirty(normalizedJson);
             CurrentFilePath = filePath;
             ClearError();
 
             SyncSelectionsFromJson();
             ReloadSettingsPanels();
             ReloadMappingsFromCurrentJson();
+            LoadCachedPreflightForCurrentJob();
 
             StatusMessage = $"Saved: {filePath}";
             return true;
@@ -737,6 +952,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public bool ValidateCurrentJson()
     {
         ValidationErrors.Clear();
+        SelectedValidationError = null;
 
         JobDefinition definition;
         try
@@ -787,6 +1003,119 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             BuildValidationErrorDetails());
         StatusMessage = "Validation failed.";
         return false;
+    }
+
+    public void NavigateToSelectedValidationError()
+    {
+        NavigateToValidationError(SelectedValidationError);
+    }
+
+    public void NavigateToValidationError(string? validationError)
+    {
+        if (string.IsNullOrWhiteSpace(validationError))
+        {
+            return;
+        }
+
+        IsValidationExpanded = true;
+
+        if (validationError.Contains("Mappings[", StringComparison.OrdinalIgnoreCase)
+            || validationError.Contains("Mapping", StringComparison.OrdinalIgnoreCase))
+        {
+            IsConnectorConfigExpanded = true;
+            var idx = TryExtractMappingIndex(validationError);
+            if (idx is >= 0 && idx < MappingRows.Count)
+            {
+                SelectedMappingRow = MappingRows[idx.Value];
+            }
+
+            StatusMessage = "Navigated to mapping section for selected validation issue.";
+            return;
+        }
+
+        if (validationError.Contains("Source", StringComparison.OrdinalIgnoreCase)
+            || validationError.Contains("Target", StringComparison.OrdinalIgnoreCase)
+            || validationError.Contains("settings", StringComparison.OrdinalIgnoreCase))
+        {
+            IsConnectorConfigExpanded = true;
+            StatusMessage = "Navigated to connector settings section for selected validation issue.";
+            return;
+        }
+
+        StatusMessage = "Validation issue selected. Please review highlighted section.";
+    }
+
+    public async Task RunPreflightAsync()
+    {
+        PreflightFindings.Clear();
+
+        JobDefinition definition;
+        try
+        {
+            definition = JobDefinitionJson.Deserialize(JsonContent);
+        }
+        catch (InvalidOperationException ex)
+        {
+            PreflightFindings.Add(new PreflightFinding
+            {
+                Severity = "ERROR",
+                Scope = "Config",
+                Message = "Cannot run preflight on invalid JSON: " + ex.Message
+            });
+            PreflightState = "Preflight failed.";
+            return;
+        }
+
+        var validationErrors = JobDefinitionValidator.Validate(definition);
+        foreach (var validationError in validationErrors)
+        {
+            var members = validationError.MemberNames.Any()
+                ? string.Join(", ", validationError.MemberNames)
+                : "(unknown)";
+
+            PreflightFindings.Add(new PreflightFinding
+            {
+                Severity = "ERROR",
+                Scope = "Validation",
+                Message = $"{members}: {validationError.ErrorMessage}"
+            });
+        }
+
+        var findings = await PreflightService.RunAsync(
+            definition,
+            CurrentFilePath,
+            PluginDirectory,
+            SourceConnectors.ToList(),
+            TargetConnectors.ToList(),
+            CancellationToken.None);
+
+        foreach (var finding in findings)
+        {
+            PreflightFindings.Add(finding);
+        }
+
+        _preflightCache[definition.Name] = PreflightFindings.ToList();
+
+        var errors = PreflightFindings.Count(item => string.Equals(item.Severity, "ERROR", StringComparison.OrdinalIgnoreCase));
+        var warnings = PreflightFindings.Count(item => string.Equals(item.Severity, "WARN", StringComparison.OrdinalIgnoreCase));
+        PreflightState = $"Preflight completed. Errors={errors}, Warnings={warnings}, Findings={PreflightFindings.Count}.";
+        StatusMessage = PreflightState;
+    }
+
+    public async Task<bool> ExportPreflightAsync(string outputPath)
+    {
+        try
+        {
+            var lines = PreflightFindings.Select(item => item.Rendered).ToArray();
+            await File.WriteAllLinesAsync(outputPath, lines);
+            StatusMessage = $"Preflight exported: {outputPath}";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            SetError("Preflight export failed: " + ex.Message);
+            return false;
+        }
     }
 
     public async Task LoadSourcePreviewAsync()
@@ -973,6 +1302,30 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public bool HasCurrentFile()
     {
         return !string.IsNullOrWhiteSpace(CurrentFilePath);
+    }
+
+    public void MarkClean()
+    {
+        if (!_isDirty)
+        {
+            return;
+        }
+
+        _isDirty = false;
+        OnPropertyChanged(nameof(HasUnsavedChanges));
+        OnPropertyChanged(nameof(UnsavedIndicator));
+    }
+
+    public void MarkDirty()
+    {
+        if (_isDirty)
+        {
+            return;
+        }
+
+        _isDirty = true;
+        OnPropertyChanged(nameof(HasUnsavedChanges));
+        OnPropertyChanged(nameof(UnsavedIndicator));
     }
 
     private void SyncSelectionsFromJson()
@@ -1434,24 +1787,60 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    private static Dictionary<string, string?> BuildWizardSettings(string connectorType, string path)
+    private static Dictionary<string, string?> BuildWizardSettings(string connectorType, string path, bool isSource)
     {
         var settings = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            settings["path"] = path.Trim();
-        }
 
         if (string.Equals(connectorType, "csv", StringComparison.OrdinalIgnoreCase))
         {
+            settings["path"] = string.IsNullOrWhiteSpace(path) ? "../data/customers.csv" : path.Trim();
             settings["delimiter"] = ";";
             settings["encoding"] = "utf-8";
+            return settings;
+        }
+
+        if (string.Equals(connectorType, "xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            settings["path"] = string.IsNullOrWhiteSpace(path) ? "../data/customers.xlsx" : path.Trim();
+            return settings;
+        }
+
+        if (string.Equals(connectorType, "jsonl", StringComparison.OrdinalIgnoreCase))
+        {
+            settings["path"] = string.IsNullOrWhiteSpace(path) ? "../data/output.jsonl" : path.Trim();
+            return settings;
         }
 
         if (string.Equals(connectorType, "rest", StringComparison.OrdinalIgnoreCase))
         {
-            settings["url"] = path;
+            settings["url"] = string.IsNullOrWhiteSpace(path) ? "https://api.example.com" : path.Trim();
+            if (isSource)
+            {
+                settings["jsonPath"] = "$.items";
+            }
+            else
+            {
+                settings["mode"] = "record";
+            }
+
             settings["timeoutSeconds"] = "30";
+            return settings;
+        }
+
+        if (string.Equals(connectorType, "mssql", StringComparison.OrdinalIgnoreCase))
+        {
+            settings["connectionString"] = string.IsNullOrWhiteSpace(path)
+                ? "Server=.;Database=SyncForge;Trusted_Connection=True;"
+                : path.Trim();
+            settings["table"] = "dbo.Customers";
+            settings["batchSize"] = "500";
+            settings["commandTimeoutSeconds"] = "30";
+            return settings;
+        }
+
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            settings["path"] = path.Trim();
         }
 
         return settings;
@@ -1551,6 +1940,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             SyncSelectionsFromJson();
             ReloadSettingsPanels();
             ReloadMappingsFromCurrentJson();
+            LoadCachedPreflightForCurrentJob();
         }
         catch (Exception ex)
         {
@@ -1561,5 +1951,46 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             _syncingFromJsonEditor = false;
         }
+    }
+
+    private void SetJsonContentWithoutDirty(string json)
+    {
+        _suppressDirtyTracking = true;
+        JsonContent = json;
+        _suppressDirtyTracking = false;
+        MarkClean();
+    }
+
+    private void LoadCachedPreflightForCurrentJob()
+    {
+        try
+        {
+            var definition = JobDefinitionJson.Deserialize(JsonContent);
+            if (_preflightCache.TryGetValue(definition.Name, out var cached))
+            {
+                PreflightFindings.Clear();
+                foreach (var item in cached)
+                {
+                    PreflightFindings.Add(item);
+                }
+
+                PreflightState = $"Loaded cached preflight for job '{definition.Name}'.";
+            }
+        }
+        catch
+        {
+            // Ignore cache loading for invalid or partial JSON edits.
+        }
+    }
+
+    private static int? TryExtractMappingIndex(string text)
+    {
+        var match = Regex.Match(text, @"Mappings\[(\d+)\]", RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        return int.TryParse(match.Groups[1].Value, out var idx) ? idx : null;
     }
 }
