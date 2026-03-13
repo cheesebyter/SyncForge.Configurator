@@ -11,7 +11,7 @@ public static class ConnectorConfigSchemaService
         {
             return normalizedType switch
             {
-                "csv" => ["path", "delimiter", "encoding"],
+                "csv" => ["path", "delimiter", "encoding", "hasHeader", "quote", "escape"],
                 "xlsx" => ["path", "sheetName", "maxRows", "maxFileSizeBytes"],
                 "rest" => ["url", "jsonPath", "timeoutSeconds", "header.Authorization"],
                 "jsonl" => ["path"],

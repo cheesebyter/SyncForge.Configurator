@@ -1,0 +1,78 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<Styles.Resources>
+
+		<!-- ============================= -->
+		<!-- Base Palette -->
+		<!-- ============================= -->
+
+		<Color x:Key="SfColor.RedOxide">#FFC02312</Color>
+		<Color x:Key="SfColor.WarmGray">#FFA3A099</Color>
+		<Color x:Key="SfColor.CoolGray">#FFD6D9E0</Color>
+		<Color x:Key="SfColor.Ivory">#FFEEEADA</Color>
+		<Color x:Key="SfColor.Sand">#FFD0BE98</Color>
+
+		<!-- ============================= -->
+		<!-- Semantic Mapping -->
+		<!-- ============================= -->
+
+		<!-- Primary Structure -->
+		<Color x:Key="SfColor.Primary">#FFA3A099</Color>
+		<!-- WarmGray -->
+		<Color x:Key="SfColor.Secondary">#FFD0BE98</Color>
+		<!-- Sand -->
+		<Color x:Key="SfColor.Background">#FFEEEADA</Color>
+		<!-- Ivory -->
+		<Color x:Key="SfColor.Surface">#FFFFFFFF</Color>
+
+		<!-- Accent / Interaction -->
+		<Color x:Key="SfColor.Accent">#FFC02312</Color>
+		<!-- RedOxide -->
+		<Color x:Key="SfColor.AccentHover">#FFD33A27</Color>
+		<!-- Slightly lighter red -->
+		<Color x:Key="SfColor.AccentPressed">#FFA61D0F</Color>
+		<!-- Darker red -->
+
+		<!-- Text -->
+		<Color x:Key="SfColor.Text">#FF2A2926</Color>
+		<!-- Deep warm charcoal -->
+		<Color x:Key="SfColor.TextMuted">#FFA3A099</Color>
+
+		<!-- Borders -->
+		<Color x:Key="SfColor.Border">#FFD6D9E0</Color>
+
+		<!-- Status -->
+		<Color x:Key="SfColor.Danger">#FFC02312</Color>
+		<Color x:Key="SfColor.Warning">#FFD0BE98</Color>
+		<Color x:Key="SfColor.Success">#FF8A7F5C</Color>
+		<!-- Derived earthy tone -->
+
+		<!-- ============================= -->
+		<!-- Brushes -->
+		<!-- ============================= -->
+
+		<SolidColorBrush x:Key="SfBrush.Primary" Color="{DynamicResource SfColor.Primary}" />
+		<SolidColorBrush x:Key="SfBrush.Secondary" Color="{DynamicResource SfColor.Secondary}" />
+		<SolidColorBrush x:Key="SfBrush.Background" Color="{DynamicResource SfColor.Background}" />
+		<SolidColorBrush x:Key="SfBrush.Surface" Color="{DynamicResource SfColor.Surface}" />
+
+		<SolidColorBrush x:Key="SfBrush.Accent" Color="{DynamicResource SfColor.Accent}" />
+		<SolidColorBrush x:Key="SfBrush.AccentHover" Color="{DynamicResource SfColor.AccentHover}" />
+		<SolidColorBrush x:Key="SfBrush.AccentPressed" Color="{DynamicResource SfColor.AccentPressed}" />
+
+		<SolidColorBrush x:Key="SfBrush.Text" Color="{DynamicResource SfColor.Text}" />
+		<SolidColorBrush x:Key="SfBrush.TextMuted" Color="{DynamicResource SfColor.TextMuted}" />
+		<SolidColorBrush x:Key="SfBrush.Border" Color="{DynamicResource SfColor.Border}" />
+
+		<SolidColorBrush x:Key="SfBrush.Danger" Color="{DynamicResource SfColor.Danger}" />
+		<SolidColorBrush x:Key="SfBrush.Warning" Color="{DynamicResource SfColor.Warning}" />
+		<SolidColorBrush x:Key="SfBrush.Success" Color="{DynamicResource SfColor.Success}" />
+
+		<!-- Selection -->
+		<SolidColorBrush x:Key="SfBrush.Selection" Color="{DynamicResource SfColor.Accent}" />
+		<SolidColorBrush x:Key="SfBrush.SelectionHover" Color="{DynamicResource SfColor.AccentHover}" />
+		<SolidColorBrush x:Key="SfBrush.SelectionForeground" Color="#FFFFFFFF" />
+
+	</Styles.Resources>
+</Styles>

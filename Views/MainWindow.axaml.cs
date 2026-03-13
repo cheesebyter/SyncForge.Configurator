@@ -126,6 +126,115 @@ public sealed partial class MainWindow : Window
         ViewModel.ReloadConnectors();
     }
 
+    private async void OnBrowsePluginDirectoryClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var selectedFolders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Select plugin directory",
+            AllowMultiple = false
+        });
+
+        var selectedFolder = selectedFolders.FirstOrDefault();
+        if (selectedFolder is null)
+        {
+            return;
+        }
+
+        if (!TryResolveStoragePath(selectedFolder.Path, out var pluginDirectory))
+        {
+            ViewModel.SetError("Selected folder path is not a local filesystem path.");
+            return;
+        }
+
+        ViewModel.PluginDirectory = pluginDirectory;
+    }
+
+    private async void OnBrowseCsvSourcePathClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Select CSV source file",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("CSV") { Patterns = ["*.csv", "*.txt"] },
+                new FilePickerFileType("All Files") { Patterns = ["*.*"] }
+            ]
+        });
+
+        var selected = files.FirstOrDefault();
+        if (selected is null)
+        {
+            return;
+        }
+
+        if (!TryResolveStoragePath(selected.Path, out var csvPath))
+        {
+            ViewModel.SetError("Selected CSV path is not a local filesystem path.");
+            return;
+        }
+
+        ViewModel.CsvQuickPath = csvPath;
+        ViewModel.SetInfo($"CSV source selected: {csvPath}");
+    }
+
+    private void OnCsvDelimiterPresetClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not Button button)
+        {
+            return;
+        }
+
+        var preset = button.Tag as string;
+        if (string.IsNullOrEmpty(preset))
+        {
+            return;
+        }
+
+        ViewModel.CsvQuickDelimiter = preset == "\\t" ? "\t" : preset;
+    }
+
+    private static bool TryResolveStoragePath(Uri storagePath, out string localPath)
+    {
+        localPath = string.Empty;
+
+        string? candidate = null;
+        if (storagePath.IsFile)
+        {
+            candidate = storagePath.LocalPath;
+        }
+        else if (!storagePath.IsAbsoluteUri)
+        {
+            candidate = storagePath.OriginalString;
+        }
+        else
+        {
+            candidate = Uri.UnescapeDataString(storagePath.AbsolutePath);
+            if (candidate.Length >= 3
+                && candidate[0] == '/'
+                && char.IsLetter(candidate[1])
+                && candidate[2] == ':')
+            {
+                candidate = candidate[1..];
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(candidate))
+        {
+            return false;
+        }
+
+        try
+        {
+            localPath = Path.GetFullPath(candidate);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     private async void OnLoadSourcePreviewClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         await ViewModel.LoadSourcePreviewAsync();

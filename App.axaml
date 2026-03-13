@@ -4,6 +4,6 @@
              RequestedThemeVariant="Light">
   <Application.Styles>
     <SimpleTheme />
-    <StyleInclude Source="avares://SyncForge.Configurator/Styles/SyncForgeTheme.axaml" />
+    <StyleInclude Source="avares://SyncForge.Configurator.UI/Styles/SyncForgeTheme.axaml" />
   </Application.Styles>
 </Application>

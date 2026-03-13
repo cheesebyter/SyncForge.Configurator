@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SyncForge.Abstractions.Configuration;
 using SyncForge.Abstractions.Connectors;
 using SyncForge.Abstractions.Models;
 

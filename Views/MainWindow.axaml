@@ -68,17 +68,33 @@
                         ItemsSource="{Binding StrategyModeOptions}"
                         SelectedItem="{Binding WizardStrategyMode, Mode=TwoWay}" />
               <TextBlock Grid.Row="1" Grid.Column="0" Text="Upsert Key Fields" VerticalAlignment="Center" />
-              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding WizardUpsertKeys, Mode=TwoWay}" Watermark="id,email" />
+              <TextBox Grid.Row="1"
+                       Grid.Column="1"
+                       Text="{Binding WizardUpsertKeys, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Watermark="id,email" />
             </Grid>
 
             <TextBlock IsVisible="{Binding IsWizardStep4}" Text="Step 4: Base parameters" FontWeight="SemiBold" />
             <Grid IsVisible="{Binding IsWizardStep4}" ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto">
               <TextBlock Grid.Row="0" Grid.Column="0" Text="Job Name" VerticalAlignment="Center" />
-              <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding WizardJobName, Mode=TwoWay}" />
+              <TextBox Grid.Row="0"
+                       Grid.Column="1"
+                       Text="{Binding WizardJobName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Watermark="z.B. ch-adressen-import" />
               <TextBlock Grid.Row="1" Grid.Column="0" Text="Source Path/URL" VerticalAlignment="Center" />
-              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding WizardSourcePath, Mode=TwoWay}" />
+              <TextBox Grid.Row="1"
+                       Grid.Column="1"
+                       Text="{Binding WizardSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Watermark="z.B. J:\\SyncForge\\examples\\CH_Adressen.csv"
+                       TextWrapping="NoWrap"
+                       ScrollViewer.HorizontalScrollBarVisibility="Auto" />
               <TextBlock Grid.Row="2" Grid.Column="0" Text="Target Path/URL" VerticalAlignment="Center" />
-              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding WizardTargetPath, Mode=TwoWay}" />
+              <TextBox Grid.Row="2"
+                       Grid.Column="1"
+                       Text="{Binding WizardTargetPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Watermark="z.B. ../data/output.jsonl"
+                       TextWrapping="NoWrap"
+                       ScrollViewer.HorizontalScrollBarVisibility="Auto" />
             </Grid>
 
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -93,21 +109,28 @@
     </Border>
 
     <Border Grid.Row="2" Classes="panel-subtle" Margin="12,8,12,0">
-      <Grid ColumnDefinitions="2*,2*,2*,Auto" RowDefinitions="Auto,Auto">
+      <Grid ColumnDefinitions="2*,Auto,2*,2*,Auto" RowDefinitions="Auto,Auto">
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Plugin Directory" FontWeight="SemiBold" />
-        <TextBlock Grid.Row="0" Grid.Column="1" Text="Source Connector" FontWeight="SemiBold" />
-        <TextBlock Grid.Row="0" Grid.Column="2" Text="Target Connector" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="0" Grid.Column="2" Text="Source Connector" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="0" Grid.Column="3" Text="Target Connector" FontWeight="SemiBold" />
 
-        <TextBox Grid.Row="1" Grid.Column="0" Margin="0,8,8,0" Text="{Binding PluginDirectory, Mode=TwoWay}" />
-        <ComboBox Grid.Row="1" Grid.Column="1"
+        <TextBox Grid.Row="1"
+           Grid.Column="0"
+           Margin="0,8,8,0"
+           Text="{Binding PluginDirectory, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+            Watermark="Plugin-Verzeichnis (z.B. bin/Debug/net8.0/plugins)"
+            TextWrapping="NoWrap"
+            ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+        <Button Grid.Row="1" Grid.Column="1" Classes="secondary" Margin="0,8,8,0" Content="Browse..." Click="OnBrowsePluginDirectoryClick" MinWidth="88" />
+        <ComboBox Grid.Row="1" Grid.Column="2"
                   Margin="0,8,8,0"
                   ItemsSource="{Binding SourceConnectors}"
                   SelectedItem="{Binding SelectedSourceConnector, Mode=TwoWay}" />
-        <ComboBox Grid.Row="1" Grid.Column="2"
+        <ComboBox Grid.Row="1" Grid.Column="3"
                   Margin="0,8,8,0"
                   ItemsSource="{Binding TargetConnectors}"
                   SelectedItem="{Binding SelectedTargetConnector, Mode=TwoWay}" />
-        <Button Grid.Row="1" Grid.Column="3" Classes="secondary" Margin="0,8,0,0" Content="Reload" Click="OnReloadConnectorsClick" MinWidth="88" />
+        <Button Grid.Row="1" Grid.Column="4" Classes="secondary" Margin="0,8,0,0" Content="Reload" Click="OnReloadConnectorsClick" MinWidth="88" />
       </Grid>
     </Border>
 
@@ -125,7 +148,7 @@
           <TextBlock Classes="section-title" Text="JSON Editor" />
           <TextBox Grid.Row="1"
                    Margin="0,6,0,0"
-                   Text="{Binding JsonContent, Mode=TwoWay}"
+                   Text="{Binding JsonContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                    AcceptsReturn="True"
                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                    ScrollViewer.HorizontalScrollBarVisibility="Auto"
@@ -152,29 +175,73 @@
            
             <Expander Header="Connector Configuration" IsExpanded="{Binding IsConnectorConfigExpanded, Mode=TwoWay}">
               <StackPanel Spacing="8" Margin="0,8,0,0">
+                <Border Classes="panel-subtle" Padding="8" IsVisible="{Binding IsCsvSourceSelected}">
+                  <StackPanel Spacing="8">
+                    <TextBlock Classes="section-title" Text="CSV Quick Settings" />
+                    <Grid ColumnDefinitions="170,*,Auto" RowDefinitions="Auto,Auto">
+                      <TextBlock Grid.Row="0" Grid.Column="0" Text="CSV Path" VerticalAlignment="Center" Margin="0,0,8,0" />
+                      <TextBox Grid.Row="0"
+                               Grid.Column="1"
+                               Margin="0,0,8,0"
+                               Text="{Binding CsvQuickPath, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                               Watermark="z.B. J:\\SyncForge\\examples\\CH_Adressen.csv"
+                               TextWrapping="NoWrap"
+                               ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+                      <Button Grid.Row="0" Grid.Column="2" Classes="secondary" Content="Browse..." Click="OnBrowseCsvSourcePathClick" MinWidth="88" />
+
+                      <TextBlock Grid.Row="1" Grid.Column="0" Text="Delimiter" VerticalAlignment="Center" Margin="0,0,8,0" />
+                      <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,8,0" Orientation="Horizontal" Spacing="6">
+                        <TextBox Width="120"
+                                 Text="{Binding CsvQuickDelimiter, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                 Watermark=";" />
+                        <Button Classes="secondary" Content=";" Click="OnCsvDelimiterPresetClick" Tag=";" MinWidth="34" />
+                        <Button Classes="secondary" Content="," Click="OnCsvDelimiterPresetClick" Tag="," MinWidth="34" />
+                        <Button Classes="secondary" Content="Tab" Click="OnCsvDelimiterPresetClick" Tag="\t" MinWidth="48" />
+                        <Button Classes="secondary" Content="|" Click="OnCsvDelimiterPresetClick" Tag="|" MinWidth="34" />
+                      </StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
                 <TextBlock Classes="section-title" Text="Source Settings" />
-                <ListBox ItemsSource="{Binding SourceSettings}" MaxHeight="120">
-                  <ListBox.ItemTemplate>
-                    <DataTemplate>
-                      <Grid ColumnDefinitions="170,*">
-                        <TextBlock Grid.Column="0" Text="{Binding Key}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" />
-                      </Grid>
-                    </DataTemplate>
-                  </ListBox.ItemTemplate>
-                </ListBox>
+                <Border BorderBrush="{DynamicResource SfBrush.Neutral200}" BorderThickness="1" CornerRadius="6" Padding="6" MaxHeight="140">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding SourceSettings}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Grid ColumnDefinitions="170,*" Margin="0,2,0,2">
+                            <TextBlock Grid.Column="0" Text="{Binding Key}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                     Watermark="{Binding Placeholder}"
+                                     TextWrapping="NoWrap"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </Border>
 
                 <TextBlock Classes="section-title" Text="Target Settings" Margin="0,8,0,0" />
-                <ListBox ItemsSource="{Binding TargetSettings}" MaxHeight="120">
-                  <ListBox.ItemTemplate>
-                    <DataTemplate>
-                      <Grid ColumnDefinitions="170,*">
-                        <TextBlock Grid.Column="0" Text="{Binding Key}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" />
-                      </Grid>
-                    </DataTemplate>
-                  </ListBox.ItemTemplate>
-                </ListBox>
+                <Border BorderBrush="{DynamicResource SfBrush.Neutral200}" BorderThickness="1" CornerRadius="6" Padding="6" MaxHeight="140">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding TargetSettings}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Grid ColumnDefinitions="170,*" Margin="0,2,0,2">
+                            <TextBlock Grid.Column="0" Text="{Binding Key}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                     Watermark="{Binding Placeholder}"
+                                     TextWrapping="NoWrap"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </Border>
 
                 <TextBlock Classes="section-title" Text="Source Preview Columns" Margin="0,8,0,0" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -197,8 +264,14 @@
                   <ListBox.ItemTemplate>
                     <DataTemplate>
                       <Grid ColumnDefinitions="*,*,Auto" Margin="0,2,0,2">
-                        <TextBox Grid.Column="0" Text="{Binding SourceField, Mode=TwoWay}" Watermark="Source field" Margin="0,0,6,0" />
-                        <TextBox Grid.Column="1" Text="{Binding TargetField, Mode=TwoWay}" Watermark="Target field" Margin="0,0,6,0" />
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding SourceField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Watermark="Source field"
+                                 Margin="0,0,6,0" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding TargetField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Watermark="Target field"
+                                 Margin="0,0,6,0" />
                         <CheckBox Grid.Column="2" IsChecked="{Binding IsRequired, Mode=TwoWay}" VerticalAlignment="Center" Content="Required" />
                       </Grid>
                     </DataTemplate>
@@ -255,7 +328,9 @@
                             ItemsSource="{Binding LogLevelOptions}"
                             SelectedItem="{Binding SelectedLogLevel, Mode=TwoWay}" />
                   <TextBlock Grid.Column="2" Text="Search" VerticalAlignment="Center" Margin="10,0,6,0" />
-                  <TextBox Grid.Column="3" Text="{Binding LogSearchText, Mode=TwoWay}" Watermark="Filter logs..." />
+                  <TextBox Grid.Column="3"
+                           Text="{Binding LogSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                           Watermark="Filter logs..." />
                   <Button Grid.Column="4" Classes="secondary" Content="Export" Click="OnExportLogsClick" Margin="10,0,0,0" />
                 </Grid>
                 <ListBox ItemsSource="{Binding FilteredLogs}" MaxHeight="140" />

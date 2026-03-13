@@ -1,0 +1,20 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Text}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Border}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="8,6" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="MinHeight" Value="32" />
+  </Style>
+
+  <Style Selector="ComboBox:pointerover:not(:focus)">
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral500}" />
+  </Style>
+
+  <Style Selector="ComboBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Primary}" />
+  </Style>
+</Styles>

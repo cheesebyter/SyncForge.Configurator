@@ -1,0 +1,20 @@
+﻿{
+    "plugins":  [
+                    {
+                        "assemblyName":  "SyncForge.Plugin.Csv",
+                        "sha256":  "6c005e37ec9f4b9e2d2b3802399488839d93800a7c448fc7234473c25e743eb2"
+                    },
+                    {
+                        "assemblyName":  "SyncForge.Plugin.Excel",
+                        "sha256":  "6ff71cf779d4867cd6e3ef669bf53b0a24a20f26414655a2bd8cadb2edb511b9"
+                    },
+                    {
+                        "assemblyName":  "SyncForge.Plugin.MsSql",
+                        "sha256":  "06fc48a3fb89c9d83e3ca43b3c81b1d606d6b6a4a2e2af522a3cc9326dbc51af"
+                    },
+                    {
+                        "assemblyName":  "SyncForge.Plugin.Rest",
+                        "sha256":  "b977dcafd23f31ade376520a637cbcdd64cc941b5872beceb93a196f59da4d64"
+                    }
+                ]
+}

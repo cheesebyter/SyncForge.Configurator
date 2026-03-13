@@ -53,6 +53,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private bool _syncingSettings;
     private bool _syncingMappings;
     private bool _syncingFromJsonEditor;
+    private bool _syncingCsvQuickEditor;
+    private bool _isCsvQuickEditing;
+    private string _csvQuickPath = string.Empty;
+    private string _csvQuickDelimiter = ";";
     private readonly Dictionary<string, List<PreflightFinding>> _preflightCache =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -131,6 +135,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         "CSV -> MSSQL",
         "REST -> JSONL",
         "Excel -> REST"
+    ];
+
+    public ObservableCollection<string> CsvDelimiterOptions { get; } =
+    [
+        ";",
+        ",",
+        "\t",
+        "|"
     ];
 
     private List<LogEntry> AllLogs { get; } = [];
@@ -322,6 +334,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             _pluginDirectory = value;
             OnPropertyChanged();
+            ReloadConnectors();
         }
     }
 
@@ -656,6 +669,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             _selectedSourceConnector = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(IsCsvSourceSelected));
             UpdateConnectorMetadata();
 
             if (!_syncingConnectorSelection && value is not null)
@@ -700,6 +714,60 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             _selectedMappingRow = value;
             OnPropertyChanged();
+        }
+    }
+
+    public bool IsCsvSourceSelected =>
+        SelectedSourceConnector is not null
+        && string.Equals(SelectedSourceConnector.ConnectorType, "csv", StringComparison.OrdinalIgnoreCase);
+
+    public string CsvQuickPath
+    {
+        get => _csvQuickPath;
+        set
+        {
+            var normalized = NormalizeCsvPathInput(value);
+            if (_csvQuickPath == normalized)
+            {
+                return;
+            }
+
+            _csvQuickPath = normalized;
+            OnPropertyChanged();
+
+            if (_syncingCsvQuickEditor)
+            {
+                return;
+            }
+
+            _isCsvQuickEditing = true;
+            UpdateOrInsertSourceSetting("path", normalized);
+            _isCsvQuickEditing = false;
+        }
+    }
+
+    public string CsvQuickDelimiter
+    {
+        get => _csvQuickDelimiter;
+        set
+        {
+            var normalized = NormalizeDelimiterInput(value);
+            if (_csvQuickDelimiter == normalized)
+            {
+                return;
+            }
+
+            _csvQuickDelimiter = normalized;
+            OnPropertyChanged();
+
+            if (_syncingCsvQuickEditor)
+            {
+                return;
+            }
+
+            _isCsvQuickEditing = true;
+            UpdateOrInsertSourceSetting("delimiter", normalized);
+            _isCsvQuickEditing = false;
         }
     }
 
@@ -1123,6 +1191,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         try
         {
             var definition = JobDefinitionJson.Deserialize(JsonContent);
+            RefreshCsvQuickEditorFromDefinition(definition);
             var columns = await SourcePreviewService.LoadColumnsAsync(definition, CurrentFilePath);
 
             SourceColumnsPreview.Clear();
@@ -1275,7 +1344,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public void ReloadConnectors()
     {
-        var discovered = ConnectorDiscoveryService.Discover(PluginDirectory);
+        var resolvedPluginDirectory = ConnectorDiscoveryService.ResolvePluginDirectory(PluginDirectory, CurrentFilePath);
+        var discovered = ConnectorDiscoveryService.Discover(PluginDirectory, CurrentFilePath);
 
         SourceConnectors.Clear();
         TargetConnectors.Clear();
@@ -1296,7 +1366,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ReloadSettingsPanels();
         WizardSourceConnector ??= SourceConnectors.FirstOrDefault();
         WizardTargetConnector ??= TargetConnectors.FirstOrDefault();
-        StatusMessage = $"Discovered connectors: source={SourceConnectors.Count}, target={TargetConnectors.Count}";
+
+        if (!string.IsNullOrWhiteSpace(PluginDirectory) && !Directory.Exists(resolvedPluginDirectory))
+        {
+            StatusMessage = $"Plugin directory not found: {resolvedPluginDirectory}";
+            return;
+        }
+
+        StatusMessage = $"Discovered connectors: source={SourceConnectors.Count}, target={TargetConnectors.Count} (root: {resolvedPluginDirectory})";
     }
 
     public bool HasCurrentFile()
@@ -1482,10 +1559,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         var sourceEntries = BuildEntries(sourceKeys, definition.Source.Settings);
         var targetEntries = BuildEntries(targetKeys, definition.Target.Settings);
 
+        if (IsCsvSourceSelected)
+        {
+            sourceEntries = sourceEntries
+                .Where(item => !string.Equals(item.Key, "path", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(item.Key, "delimiter", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
         _syncingSettings = true;
         ReplaceSettings(SourceSettings, sourceEntries, isSource: true);
         ReplaceSettings(TargetSettings, targetEntries, isSource: false);
         _syncingSettings = false;
+
+        RefreshCsvQuickEditorFromSettings();
     }
 
     private static List<SettingEntry> BuildEntries(
@@ -1536,6 +1623,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private void OnSourceSettingChanged(object? sender, EventArgs e)
     {
         ApplySettingsToJson(isSource: true, SourceSettings);
+        RefreshCsvQuickEditorFromSettings();
     }
 
     private void OnTargetSettingChanged(object? sender, EventArgs e)
@@ -1578,6 +1666,132 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             _syncingSettings = false;
         }
+    }
+
+    private void RefreshCsvQuickEditorFromSettings()
+    {
+        if (_isCsvQuickEditing)
+        {
+            return;
+        }
+
+        _syncingCsvQuickEditor = true;
+        try
+        {
+            if (!IsCsvSourceSelected)
+            {
+                CsvQuickPath = string.Empty;
+                CsvQuickDelimiter = string.Empty;
+                return;
+            }
+
+            var definition = JobDefinitionJson.Deserialize(JsonContent);
+            RefreshCsvQuickEditorFromDefinition(definition);
+        }
+        catch
+        {
+            // Keep the previous visible values if JSON is temporarily invalid during editing.
+        }
+        finally
+        {
+            _syncingCsvQuickEditor = false;
+        }
+    }
+
+    private void RefreshCsvQuickEditorFromDefinition(JobDefinition definition)
+    {
+        if (definition is null)
+        {
+            return;
+        }
+
+        var path = TryGetSettingValue(definition.Source.Settings, "path");
+        var delimiter = TryGetSettingValue(definition.Source.Settings, "delimiter");
+
+        CsvQuickPath = NormalizeCsvPathInput(path);
+        CsvQuickDelimiter = NormalizeDelimiterInput(delimiter);
+    }
+
+    private static string? TryGetSettingValue(IReadOnlyDictionary<string, string?> settings, string key)
+    {
+        if (settings.TryGetValue(key, out var direct))
+        {
+            return direct;
+        }
+
+        foreach (var pair in settings)
+        {
+            if (string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                return pair.Value;
+            }
+        }
+
+        return null;
+    }
+
+    private void UpdateOrInsertSourceSetting(string key, string? value)
+    {
+        var entry = SourceSettings.FirstOrDefault(item =>
+            string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase));
+
+        if (entry is not null)
+        {
+            entry.Value = value ?? string.Empty;
+        }
+
+        try
+        {
+            var rootNode = JsonNode.Parse(JsonContent) as JsonObject
+                ?? throw new InvalidOperationException("Current JSON is not an object.");
+
+            var sourceSection = rootNode["source"] as JsonObject ?? new JsonObject();
+            var settingsObject = sourceSection["settings"] as JsonObject ?? new JsonObject();
+            settingsObject[key] = value ?? string.Empty;
+
+            sourceSection["settings"] = settingsObject;
+            rootNode["source"] = sourceSection;
+
+            _syncingSettings = true;
+            JsonContent = rootNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (Exception ex)
+        {
+            SetError($"CSV setting could not be applied: {ex.Message}");
+        }
+        finally
+        {
+            _syncingSettings = false;
+        }
+    }
+
+    private static string NormalizeCsvPathInput(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return string.Empty;
+        }
+
+        var filtered = raw.Where(ch => !char.IsControl(ch)).ToArray();
+        var value = new string(filtered).Trim();
+
+        if (value.Length >= 2 && value[0] == '"' && value[^1] == '"')
+        {
+            value = value[1..^1].Trim();
+        }
+
+        return value;
+    }
+
+    private static string NormalizeDelimiterInput(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw))
+        {
+            return string.Empty;
+        }
+
+        var filtered = raw.Where(ch => ch == '\t' || !char.IsControl(ch)).ToArray();
+        return new string(filtered);
     }
 
     private void ReloadMappingsFromCurrentJson()

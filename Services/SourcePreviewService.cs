@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
+using CsvHelper;
+using CsvHelper.Configuration;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -12,6 +14,10 @@ public static class SourcePreviewService
     public static async Task<IReadOnlyList<string>> LoadColumnsAsync(JobDefinition definition, string? currentFilePath)
     {
         var sourceType = Normalize(definition.Source.Type);
+        if (string.IsNullOrWhiteSpace(sourceType))
+        {
+            sourceType = InferSourceType(definition.Source.Settings);
+        }
 
         if (sourceType == "csv")
         {
@@ -31,26 +37,76 @@ public static class SourcePreviewService
         throw new InvalidOperationException($"Source preview for type '{definition.Source.Type}' is not available in UI-6.");
     }
 
+    private static string InferSourceType(IReadOnlyDictionary<string, string?> settings)
+    {
+        if (settings.ContainsKey("delimiter"))
+        {
+            return "csv";
+        }
+
+        if (settings.TryGetValue("path", out var path) && !string.IsNullOrWhiteSpace(path))
+        {
+            var extension = Path.GetExtension(path).ToLowerInvariant();
+            if (extension == ".csv")
+            {
+                return "csv";
+            }
+
+            if (extension == ".xlsx")
+            {
+                return "xlsx";
+            }
+
+            if (extension == ".jsonl")
+            {
+                return "jsonl";
+            }
+        }
+
+        if (settings.ContainsKey("url"))
+        {
+            return "rest";
+        }
+
+        return string.Empty;
+    }
+
     private static async Task<IReadOnlyList<string>> ReadCsvHeaderAsync(JobDefinition definition, string? currentFilePath)
     {
         var path = ResolvePath(definition.Source.Settings, currentFilePath);
-        var delimiter = definition.Source.Settings.TryGetValue("delimiter", out var d) && !string.IsNullOrWhiteSpace(d)
-            ? d
-            : ",";
+        var settings = CsvSourceSettings.From(new Dictionary<string, string?>(definition.Source.Settings, StringComparer.OrdinalIgnoreCase)
+        {
+            ["path"] = path
+        });
 
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        using var reader = new StreamReader(stream);
-        var line = await reader.ReadLineAsync();
-        if (string.IsNullOrWhiteSpace(line))
+        using var reader = new StreamReader(stream, settings.GetEncoding(), detectEncodingFromByteOrderMarks: true);
+
+        var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            throw new InvalidOperationException("CSV source has no header row.");
+            Delimiter = settings.Delimiter,
+            HasHeaderRecord = settings.HasHeader,
+            Quote = settings.Quote,
+            Escape = settings.Escape,
+            BadDataFound = null,
+            MissingFieldFound = null,
+            TrimOptions = TrimOptions.Trim
+        };
+
+        using var csv = new CsvReader(reader, csvConfig);
+        if (!await csv.ReadAsync())
+        {
+            throw new InvalidOperationException("CSV file is empty.");
         }
 
-        return line.Split(delimiter)
-            .Select(value => value.Trim())
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        if (settings.HasHeader)
+        {
+            csv.ReadHeader();
+            return CsvSourceSettings.ValidateHeaderColumns(csv.HeaderRecord ?? []);
+        }
+
+        var firstRecord = csv.Parser.Record ?? [];
+        return CsvSourceSettings.BuildGeneratedHeaders(firstRecord.Length);
     }
 
     private static IReadOnlyList<string> ReadXlsxHeader(JobDefinition definition, string? currentFilePath)

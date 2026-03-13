@@ -84,6 +84,32 @@ dotnet build .\src\SyncForge.sln -c Release
 dotnet run --project ..\SyncForge.Configurator\SyncForge.Configurator.csproj
 ```
 
+## Visual Studio Build Automation
+
+Der Configurator ist so konfiguriert, dass ein normaler Build in Visual Studio (Build / Rebuild) automatisch Plugin-Artefakte erzeugt.
+
+Beim Build von `SyncForge.Configurator.csproj` passiert zusaetzlich:
+
+- Publish der Plugin-Projekte (CSV, Excel, REST, MSSQL falls vorhanden)
+- Kopieren der Plugin-DLLs nach `plugins\`
+- Erzeugung von `trusted-plugins.json`
+
+Damit verhaelt sich Visual Studio konsistent zu den bisherigen Skripten.
+
+Direkter CLI-Aufruf (gleiches Verhalten wie in Visual Studio):
+
+```powershell
+dotnet build .\SyncForge.Configurator.csproj -c Release
+```
+
+Hinweis:
+
+- Das automatische Bundling kann bei Bedarf deaktiviert werden mit:
+
+```powershell
+dotnet build .\SyncForge.Configurator.csproj -c Release /p:SyncForgeBundlePluginsOnBuild=false
+```
+
 ## Build-Skripte (Configurator + Plugins)
 
 Fuer interne Builds stehen Skripte bereit, die den Configurator publishen und die verfuegbaren Plugin-Repositories mitbauen.
@@ -119,6 +145,8 @@ Die Build-Skripte schreiben zusaetzlich:
 
 - `build-metadata.json` (Version, Commit, Build-Zeit, Output-Pfade)
 - `trusted-plugins.json` (SHA256-Allowlist fuer Plugin-Trust-Policy)
+
+Die Skripte bleiben fuer Packaging/CI nuetzlich; fuer lokale Visual-Studio-Builds ist kein separates Skript mehr erforderlich.
 
 ## Packaging (EPIC 12)
 

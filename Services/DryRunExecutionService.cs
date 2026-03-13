@@ -1,10 +1,10 @@
 using System.Reflection;
-using System.Runtime.Loader;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using SyncForge.Abstractions.Configuration;
 using SyncForge.Abstractions.Connectors;
 using SyncForge.Abstractions.Logging;
+using SyncForge.Abstractions.Orchestration;
 using SyncForge.Core.Mapping;
 using SyncForge.Core.Orchestration;
 
@@ -30,7 +30,11 @@ public static class DryRunExecutionService
         serviceCollection.AddSingleton<IMappingEngine, MappingEngine>();
         serviceCollection.AddTransient<IJobOrchestrator, JobOrchestrator>();
 
-        var pluginRegistry = LoadPlugins(serviceCollection, GetPluginAssembliesToLoad(definition), pluginDirectory);
+        var pluginRegistry = LoadPlugins(
+            serviceCollection,
+            GetPluginAssembliesToLoad(definition),
+            pluginDirectory,
+            currentFilePath);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var resolver = new DynamicConnectorResolver(serviceProvider, pluginRegistry);
 
@@ -117,16 +121,20 @@ public static class DryRunExecutionService
     private static PluginRegistry LoadPlugins(
         IServiceCollection services,
         IEnumerable<string> pluginAssemblyNames,
-        string pluginDirectory)
+        string pluginDirectory,
+        string? currentFilePath)
     {
         var registry = new PluginRegistry();
+        var resolvedPluginDirectory = ConnectorDiscoveryService.ResolvePluginDirectory(pluginDirectory, currentFilePath);
 
         foreach (var pluginAssemblyName in pluginAssemblyNames.Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            var assemblyPath = ResolveAssemblyPath(pluginAssemblyName, pluginDirectory);
-            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
+            var assemblyPath = ResolveAssemblyPath(pluginAssemblyName, pluginDirectory, resolvedPluginDirectory);
+            var loadContext = new PluginAssemblyLoadContext(assemblyPath);
+            registry.LoadContexts.Add(loadContext);
+            var assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
 
-            foreach (var type in assembly.GetTypes().Where(IsConcreteConnectorType))
+            foreach (var type in GetLoadableTypes(assembly).Where(IsConcreteConnectorType))
             {
                 if (typeof(ISourceConnector).IsAssignableFrom(type))
                 {
@@ -145,15 +153,15 @@ public static class DryRunExecutionService
         return registry;
     }
 
-    private static string ResolveAssemblyPath(string assemblyName, string pluginDirectory)
+    private static string ResolveAssemblyPath(string assemblyName, string pluginDirectory, string resolvedPluginDirectory)
     {
-        var directPath = Path.Combine(pluginDirectory, $"{assemblyName}.dll");
+        var directPath = Path.Combine(resolvedPluginDirectory, $"{assemblyName}.dll");
         if (File.Exists(directPath))
         {
             return directPath;
         }
 
-        var candidates = EnumeratePluginRoots(pluginDirectory)
+        var candidates = EnumeratePluginRoots(pluginDirectory, resolvedPluginDirectory)
             .SelectMany(root =>
             {
                 try
@@ -178,15 +186,25 @@ public static class DryRunExecutionService
         }
 
         throw new FileNotFoundException(
-            $"Plugin assembly '{assemblyName}' was not found under '{pluginDirectory}'.",
+            $"Plugin assembly '{assemblyName}' was not found under '{resolvedPluginDirectory}'.",
             directPath);
     }
 
-    private static IEnumerable<string> EnumeratePluginRoots(string pluginDirectory)
+    private static IEnumerable<string> EnumeratePluginRoots(string pluginDirectory, string resolvedPluginDirectory)
     {
-        if (Directory.Exists(pluginDirectory))
+        if (!string.IsNullOrWhiteSpace(pluginDirectory))
         {
-            yield return pluginDirectory;
+            if (Directory.Exists(resolvedPluginDirectory))
+            {
+                yield return resolvedPluginDirectory;
+            }
+
+            yield break;
+        }
+
+        if (Directory.Exists(resolvedPluginDirectory))
+        {
+            yield return resolvedPluginDirectory;
         }
 
         var current = new DirectoryInfo(AppContext.BaseDirectory);
@@ -208,8 +226,22 @@ public static class DryRunExecutionService
         return type.IsClass && !type.IsAbstract && type.IsPublic;
     }
 
+    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            return ex.Types.Where(type => type is not null).Cast<Type>();
+        }
+    }
+
     private sealed class PluginRegistry
     {
+        public List<PluginAssemblyLoadContext> LoadContexts { get; } = [];
+
         public List<Type> SourceConnectorTypes { get; } = [];
 
         public List<Type> TargetConnectorTypes { get; } = [];

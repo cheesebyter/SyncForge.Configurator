@@ -45,9 +45,18 @@ $scriptRoot = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 $configuratorRoot = Split-Path -Path $scriptRoot -Parent
 $workspaceRoot = Split-Path -Path $configuratorRoot -Parent
 
+$expectedSyncForgeSolution = Join-Path $workspaceRoot "SyncForge\src\SyncForge.sln"
+if ($workspaceRoot -match '^[A-Za-z]:\\$') {
+    Write-Warning "Workspace root resolves to drive root ('$workspaceRoot'). Plugin repositories may be missing or in a different location."
+}
+
+if (-not (Test-Path $expectedSyncForgeSolution)) {
+    Write-Warning "Expected OSS solution not found at '$expectedSyncForgeSolution'. Plugin publish may be partially skipped."
+}
+
 if ([string]::IsNullOrWhiteSpace($Commit)) {
     try {
-        $Commit = (& git -C $workspaceRoot rev-parse --verify HEAD).Trim()
+        $Commit = (& git -C $workspaceRoot rev-parse --verify HEAD 2>$null).Trim()
     }
     catch {
         $Commit = "unknown"
@@ -83,16 +92,20 @@ New-Item -Path $pluginsOutputRoot -ItemType Directory -Force | Out-Null
 
 if (-not $SkipConfiguratorPublish) {
     Write-Host "Publishing SyncForge.Configurator..."
-    Invoke-DotNet -Arguments @(
+    $publishArgs = @(
         "publish",
         $configuratorProject,
         "-c", $Configuration,
         "-f", $Framework,
         "-o", $OutputRoot
-    ) + (Get-DeterministicPublishProperties)
+    )
+    $publishArgs += Get-DeterministicPublishProperties
+    Invoke-DotNet -Arguments $publishArgs
 }
 
 if (-not $SkipPluginPublish) {
+    $publishedPluginCount = 0
+
     foreach ($pluginProject in $pluginProjects) {
         if (-not (Test-Path $pluginProject)) {
             Write-Warning "Plugin project not found, skipping: $pluginProject"
@@ -104,13 +117,20 @@ if (-not $SkipPluginPublish) {
         New-Item -Path $pluginOutput -ItemType Directory -Force | Out-Null
 
         Write-Host "Publishing plugin $pluginName..."
-        Invoke-DotNet -Arguments @(
+        $pluginPublishArgs = @(
             "publish",
             $pluginProject,
             "-c", $Configuration,
             "-f", $Framework,
             "-o", $pluginOutput
-        ) + (Get-DeterministicPublishProperties)
+        )
+        $pluginPublishArgs += Get-DeterministicPublishProperties
+        Invoke-DotNet -Arguments $pluginPublishArgs
+        $publishedPluginCount++
+    }
+
+    if ($publishedPluginCount -eq 0) {
+        Write-Warning "No plugin projects were published. Use -SkipPluginPublish intentionally or verify repository layout."
     }
 }
 

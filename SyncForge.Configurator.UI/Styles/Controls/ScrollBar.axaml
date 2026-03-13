@@ -1,0 +1,26 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="ScrollBar">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral100}" />
+    <Setter Property="Foreground" Value="{DynamicResource SfBrush.Neutral500}" />
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Thumb">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral500}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral600}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="MinWidth" Value="8" />
+    <Setter Property="MinHeight" Value="8" />
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Thumb:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral600}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral700}" />
+  </Style>
+
+  <Style Selector="ScrollBar /template/ Thumb:pressed">
+    <Setter Property="Background" Value="{DynamicResource SfBrush.Neutral700}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SfBrush.Neutral800}" />
+  </Style>
+</Styles>

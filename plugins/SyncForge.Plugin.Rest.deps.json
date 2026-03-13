@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "SyncForge.Plugin.Rest/1.0.0": {
+        "dependencies": {
+          "SyncForge.Abstractions": "1.0.0"
+        },
+        "runtime": {
+          "SyncForge.Plugin.Rest.dll": {}
+        }
+      },
+      "SyncForge.Abstractions/1.0.0": {
+        "runtime": {
+          "SyncForge.Abstractions.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "SyncForge.Plugin.Rest/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "SyncForge.Abstractions/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
